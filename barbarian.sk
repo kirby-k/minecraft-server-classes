@@ -1,0 +1,122 @@
+options:
+    soulboundText: "&9Soulbound"
+    axeItem: wooden axe
+    axeItemName: "&4&lBarbarian's Axe"
+    axeItemLore: "&7Grants absorption and regeneration on hit."
+
+on load:
+    clear {barbarianClassItemNames::*}
+    set {barbarianClassItemNames::*} to {@axeItemName}
+
+on tool change:
+    if name of new tool is {@axeItemName}:
+        apply slowness 1 to player for 10 day
+    else:
+        remove slowness from player
+
+on death:
+    if attacker is not a player:
+        stop
+    if isCorrectClass(attacker, "class.barbarian") is true:
+        if isCorrectGear(attacker, attacker's tool, ({@axeItemName})) is false:
+            stop
+
+        set attacker's tool to updateKillCountLore(attacker's tool)
+        set {_kills} to getKillsFromLore(attacker's tool)
+
+        # Wooden
+        if {_kills} is 25:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (sharpness 1))
+        # Copper
+        else if {_kills} is 50:
+            set attacker's tool to upgradeItem(attacker, attacker's tool, copper axe, 7 seconds)
+        else if {_kills} is 75:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (efficiency 1))
+        # Golden
+        else if {_kills} is 100:
+            set attacker's tool to upgradeItem(attacker, attacker's tool, golden axe, 6 seconds)
+            set attacker's tool to addEnchants(attacker, attacker's tool, (bane of arthropods 1, smite 1))
+        else if {_kills} is 125:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (looting 1, efficiency 1))
+        # Iron
+        else if {_kills} is 150:
+            set attacker's tool to upgradeItem(attacker, attacker's tool, iron axe, 5 seconds)
+            set attacker's tool to addEnchants(attacker, attacker's tool, (bane of arthropods 1, smite 1, looting 2, efficiency 2))
+        else if {_kills} is 200:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (bane of arthropods 2, smite 2))
+        else if {_kills} is 250:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (thorns 1, efficiency 3))
+        # Diamond
+        else if {_kills} is 300:
+            set attacker's tool to upgradeItem(attacker, attacker's tool, diamond axe, 5 seconds)
+            set attacker's tool to addEnchants(attacker, attacker's tool, (bane of arthropods 2, smite 2, thorns 1, looting 2, efficiency 3))
+        else if {_kills} is 400:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (thorns 2, efficiency 4))
+        else if {_kills} is 500:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (sharpness 1))
+        else if {_kills} is 600:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (sharpness 2, bane of arthropods 3, smite 3, fire aspect 1, efficiency 4))
+        # Netherite
+        else if {_kills} is 700:
+            set attacker's tool to upgradeItem(attacker, attacker's tool, netherite axe, 4 seconds)
+            set attacker's tool to addEnchants(attacker, attacker's tool, (sharpness 2, bane of arthropods 3, smite 3, thorns 2, fire aspect 1, looting 2, efficiency 4))
+        else if {_kills} is 800:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (sharpness 3, thorns 3, fire aspect 1))
+        else if {_kills} is 900:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (looting 3, efficiency 5))
+        else if {_kills} is 1000:
+            set attacker's tool to addEnchants(attacker, attacker's tool, (sharpness 5, bane of arthropods 5, smite 5, thorns 5, fire aspect 5, looting 5, efficiency 10))
+
+on damage:
+    if attacker is not a player:
+        stop
+    if isCorrectClass(attacker, "class.barbarian") is true:
+        if isCorrectGear(attacker, attacker's tool, {barbarianClassItemNames::*}) is false:
+            cancel event
+            stop
+
+        if isOnCooldown(attacker, attacker's tool) is true:
+            stop
+        else:
+            if attacker's tool is wooden axe:
+                apply regeneration 1 to attacker for 5 second
+            if attacker's tool is copper axe:
+                apply regeneration 1 to attacker for 6 second
+            if attacker's tool is golden axe:
+                apply absorption 1 to attacker for 1.5 second
+                apply regeneration 1 to attacker for 7 second
+            if attacker's tool is iron axe:
+                apply absorption 1 to attacker for 2.5 second
+                apply regeneration 1 to attacker for 10 second
+            if attacker's tool is diamond axe:
+                apply absorption 2 to attacker for 3 second
+                apply regeneration 2 to attacker for 7.5 second
+            if attacker's tool is netherite axe:
+                apply absorption 2 to attacker for 3 second
+                apply regeneration 3 to attacker for 3 second
+
+            play sound "entity.ravager.roar" with volume 0.5 and pitch 1.5 to attacker
+            set {_eye} to eye location of attacker
+            set {_target} to location 1 block in front of {_eye}
+            show 20 angry villager at {_target}
+
+            setCooldown(attacker, attacker's tool)
+
+            send action bar "&a&lAbility Ready!" to attacker
+            play sound "block.note_block.chime" with pitch 2 to attacker
+
+command /givebarbarianaxe:
+    permission: class.barbarian
+    trigger:
+        give createClassItem({@axeItem}, {@axeItemName}, {@axeItemLore}, 8 seconds) to player
+        send "&6&lYour prayers have been answered..." to player
+        apply nausea 1 to player for 9 seconds
+        apply blindness 1 to player for 6 seconds
+        play sound "entity.piglin_brute.angry" with volume 4 and pitch 0.5 to player
+        play sound "entity.ghast.ambient" with volume 4 and pitch 0.5 to player
+        play 1 end rod above player's head
+        wait 50 ticks
+        play 1 end rod above player's head
+        wait 50 ticks
+        play 1 end rod above player's head
+        wait 50 ticks

@@ -1,0 +1,130 @@
+options:
+    soulboundText: "&9Soulbound"
+
+function getIDFromLore(i: item) :: text:
+    set {_lore} to line 5 of lore of {_i}
+    return last element of ({_lore} split at "ID: ")
+
+function getCooldownFromLore(i: item) :: timespan:
+    set {_rawLore} to line 2 of lore of {_i}
+    set {_rawLore} to last element of ({_rawLore} split at ": ")
+    set {_cooldown} to {_rawLore} parsed as a timespan
+    return {_cooldown}
+
+function isSoulbound(i: item) :: boolean:
+    set {_lore::*} to lore of {_i}
+    loop {_lore::*}:
+        if loop-value contains {@soulboundText}:
+            return true
+    return false
+
+function isClassGear(i: item) :: boolean:
+    set {_lore::*} to lore of {_i}
+    loop {_lore::*}:
+        if loop-value contains "ID: ":
+            return true
+    return false
+
+function isCorrectClass(p: player, class: text) :: boolean:
+    if {_p} has permission {_class}:
+        return true
+    else:
+        return false
+
+function isCorrectGear(p: player, usedGear: item, classItems: texts, verbose: boolean = true) :: boolean:
+    loop {_classItems::*}:
+        if name of {_usedGear} is loop-value:
+            return true
+    if {_verbose} is true:
+        send "&7You've only been trained to use %{_classItems::*}%!" to {_p}
+    return false
+
+function isOnCooldown(p: player, usedGear: item) :: boolean:
+    set {_id} to getIDFromLore({_usedGear})
+    if {cooldown::%{_id}%} is set:
+        send action bar "&7Recharging..." to {_p}
+        play sound "block.note_block.bass" with pitch 0.5 to {_p}
+        return true
+    return false
+
+function setCooldown(p: player, usedGear: item):
+    set {_id} to getIDFromLore({_usedGear})
+    set {_cooldown} to getCooldownFromLore({_usedGear})
+    set {cooldown::%{_id}%} to true
+    wait {_cooldown}
+    delete {cooldown::%{_id}%}
+
+function createClassItem(i: item, itemName: text, loreText: text, cooldown: timespan) :: item:
+    set {_id} to random uuid
+    set {_classItem} to unbreakable {_i} named {_itemName} with lore {_loreText}
+    set line 2 of lore of {_classItem} to "&7Cooldown: %{_cooldown}%"
+    set line 3 of lore of {_classItem} to "&cKills: 0"
+    set line 4 of lore of {_classItem} to {@soulboundText}
+    set line 5 of lore of {_classItem} to "&8ID: %{_id}%"
+    return {_classItem}
+
+function getKillsFromLore(i: item) :: integer:
+    set {_rawLore} to line 3 of lore of {_i}
+    set {_rawLore} to last element of ({_rawLore} split at ": ")
+    set {_kills} to {_rawLore} parsed as an integer
+    return {_kills}
+
+function updateKillCountLore(i: item) :: item:
+    set {_rawLore} to line 3 of lore of {_i}
+    set {_kills} to getKillsFromLore({_i})
+    add 25 to {_kills}
+    set line 3 of lore of {_i} to "&cKills: %{_kills}%"
+    return {_i}
+
+function upgradeItem(p: player, i: item, newType: item, cooldown: timespan) :: item:
+    send "&2Your %name of {_i}% &2glows brightly as it transforms!" to {_p}
+    set {_oldLore::*} to lore of {_i}
+    set {_i} to unbreakable {_newType} named name of {_i}
+    set lore of {_i} to {_oldLore::*}
+    set line 2 of lore of {_i} to "&7Cooldown: %{_cooldown}%"
+    return {_i}
+
+function addEnchants(p: player, i: item, enchants: enchantment types) :: item:
+    send "&2Your %name of {_i}% &2learns from its battles!" to {_p}
+    loop {_enchants::*}:
+        enchant {_i} with loop-value
+    return {_i}
+
+# Prevent Enchanting Table use
+on enchant prepare:
+    if isClassGear(event-item) is true:
+        send "&7You cannot find the words to enchant %name of event-item%&7..." to player
+        wait 1 tick
+        close player's inventory
+
+# Prevent Anvil use
+on inventory click:
+    if event-inventory is an anvil inventory:
+        if index of event-slot is 2:
+            set {_i} to slot 2 of event-inventory
+            set {_originalName} to name of slot 0 of event-inventory
+            if isClassGear({_i}) is true:
+                cancel event
+                wait 1 tick
+                close player's inventory
+                send "&7You can't find the will to modify your %{_originalName}%&7..." to player
+
+on drop:
+    if isSoulbound(event-item) is true:
+        cancel event
+        send action bar "&9This item is bound to your soul!" to player
+
+# Keep the item on death
+on death of player:
+    loop items in victim's inventory:
+        if isSoulbound(loop-item) is true:
+            add loop-item to {soulbound.drops::%victim's uuid%::*}
+            remove loop-item from drops
+
+# Give the items back when they respawn
+on respawn:
+    if {soulbound.drops::%player's uuid%::*} is set:
+        loop {soulbound.drops::%player's uuid%::*}:
+            give loop-value to player
+        delete {soulbound.drops::%player's uuid%::*}
+        send "&7Your %{@soulboundText}% &7items return to you..." to player

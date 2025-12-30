@@ -1,0 +1,94 @@
+options:
+    soulboundText: "&9Soulbound"
+
+    wither_wand_name: "&8&lWither Wand"
+    wither_wand_lore: "&7Right-click to shoot a Wither head!"
+    wither_wand_cooldown: 1 second
+
+    leaping_wand_name: "&a&lLeaping Wand"
+    leaping_wand_lore: "&7Right-click to leap far into the air!"
+    leaping_wand_cooldown: 1 seconds
+
+    leap_power: 2
+    leap_vertical: 0.75
+
+on load:
+    clear {blackMageClassItems::*}
+    set {blackMageClassItems::*} to {@wither_wand_name}, and {@leaping_wand_name}
+
+on damage of player:
+    if damage cause is fall:
+        if metadata value "leap_protect" of victim is true:
+            cancel event
+            delete metadata value "leap_protect" of victim
+            play sound "entity.generic.small_fall" with volume 0.5 to victim
+
+# Black mage can only use wands
+on damage:
+    if attacker is not a player:
+        stop
+    if isCorrectClass(attacker, "class.blackmage") is true:
+        if isCorrectGear(attacker, attacker's tool, {blackMageClassItems::*}) is false:
+            cancel event
+            stop
+
+on death:
+    if attacker is not a player:
+        stop
+    if isCorrectClass(attacker, "class.blackmage") is true:
+        if isCorrectGear(attacker, attacker's tool, {blackMageClassItems::*}, false) is false:
+            stop
+        set attacker's tool to updateKillCountLore(attacker's tool)
+
+on rightclick:
+    if isCorrectGear(player, player's tool, {blackMageClassItems::*}, false) is false:
+        stop
+
+    if isCorrectGear(player, player's tool, ({@wither_wand_name}), false) is true:
+        if isOnCooldown(player, player's tool) is true:
+            stop
+        else:
+            cancel event
+            make player shoot a wither skull at speed 2
+            setCooldown(player, player's tool)
+
+    if isCorrectGear(player, player's tool, ({@leaping_wand_name}), false) is true:
+        if isOnCooldown(player, player's tool) is true:
+            stop
+        else:
+            cancel event
+            set {_v} to vector in direction of player
+            set standard length of {_v} to {@leap_power}
+            set y of {_v} to {@leap_vertical}
+            set velocity of player to {_v}
+            
+            play sound "entity.bat.takeoff" with pitch 0.5 to player
+            show 20 cloud at player's location
+            
+            setCooldown(player, player's tool)
+            send "no fall damage" to player
+            set metadata value "leap_protect" of player to true
+            wait 2 seconds
+            delete metadata value "leap_protect" of player
+            send "fall damage restored" to player
+            # wait 15 ticks
+            # apply slow falling 1 to player for 0.25 seconds
+
+# Wither skulls should not cause block damage
+on explode:
+    if event-entity is a wither skull:
+        if shooter is a player:
+            cancel event 
+            create a safe explosion of force 0 at event-location
+            show 30 smoke at event-location
+
+command /givewands:
+    permission: class.blackmage
+    trigger:
+        set {_wither_wand} to createClassItem(black candle, {@wither_wand_name}, {@wither_wand_lore}, {@wither_wand_cooldown})
+        enchant {_wither_wand} with sharpness 3
+        give {_wither_wand} to player
+
+        set {_leaping_wand} to createClassItem(brush, {@leaping_wand_name}, {@leaping_wand_lore}, {@leaping_wand_cooldown})
+        enchant {_leaping_wand} with wind burst
+        give {_leaping_wand} to player
