@@ -54,11 +54,11 @@ function setCooldown(p: player, usedGear: item):
     wait {_cooldown}
     delete {cooldown::%{_id}%}
 
-function createClassItem(i: item, itemName: text, loreText: text, cooldown: timespan) :: item:
+function createClassItem(i: item, itemName: text, loreText: text, counter: text, cooldown: timespan) :: item:
     set {_id} to random uuid
     set {_classItem} to unbreakable {_i} named {_itemName} with lore {_loreText}
     set line 2 of lore of {_classItem} to "&7Cooldown: %{_cooldown}%"
-    set line 3 of lore of {_classItem} to "&cKills: 0"
+    set line 3 of lore of {_classItem} to "%{_counter}%: 0"
     set line 4 of lore of {_classItem} to {@soulboundText}
     set line 5 of lore of {_classItem} to "&8ID: %{_id}%"
     return {_classItem}
