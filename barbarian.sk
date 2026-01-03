@@ -3,6 +3,7 @@ options:
     axeItem: wooden axe
     axeItemName: "&4&lBarbarian's Axe"
     axeItemLore: "&7Grants absorption and regeneration on hit."
+    initial_ability_cooldown: 8
 
 on load:
     clear {barbarianClassItemNames::*}
@@ -68,6 +69,8 @@ on death:
             set attacker's tool to addEnchants(attacker, attacker's tool, (sharpness 5, bane of arthropods 5, smite 5, thorns 5, fire aspect 5, looting 5, efficiency 10))
 
 on damage:
+    if attacker is op:
+        stop
     if attacker is not a player:
         stop
     if isCorrectClass(attacker, "class.barbarian") is true:
@@ -108,7 +111,7 @@ on damage:
 command /givebarbarianaxe:
     permission: class.barbarian
     trigger:
-        give createClassItem({@axeItem}, {@axeItemName}, {@axeItemLore}, "&cKills", 8 seconds) to player
+        give createClassItem({@axeItem}, {@axeItemName}, {@axeItemLore}, "&cKills", {@initial_ability_cooldown}) to player
         send "&6&lYour prayers have been answered..." to player
         apply nausea 1 to player for 9 seconds
         apply blindness 1 to player for 6 seconds

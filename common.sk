@@ -1,8 +1,12 @@
 options:
     soulboundText: "&9Soulbound"
 
-function getTag(i: item, tag: text) :: number:
+function getNumberTag(i: item, tag: text) :: number:
     return double tag {_tag} of custom nbt of {_i}
+
+function getTimespanTag(i: item, tag: text) :: timespan:
+    set {_tag} to double tag {_tag} of custom nbt of {_i}
+    return "%{_tag}% seconds" parsed as timespan
 
 function getIDFromLore() :: text:
     set {_lore} to line 5 of lore of {_i}
@@ -57,10 +61,10 @@ function setCooldown(p: player, usedGear: item):
     # wait {_cooldown}
     # delete {cooldown::%{_id}%}
 
-function createClassItem(i: item, itemName: text, loreText: text, counter: text, cooldown: timespan) :: item:
+function createClassItem(i: item, itemName: text, loreText: text, counter: text, cooldown: number) :: item:
     set {_id} to random uuid
     set {_classItem} to 1 of unbreakable {_i} named {_itemName} with lore {_loreText}
-    set line 2 of lore of {_classItem} to "&7Cooldown: %{_cooldown}%"
+    set line 2 of lore of {_classItem} to "&7Cooldown: %{_cooldown}% seconds"
     set line 3 of lore of {_classItem} to "%{_counter}%: 0"
     set line 4 of lore of {_classItem} to {@soulboundText}
     set line 5 of lore of {_classItem} to "&8ID: %{_id}%"
@@ -71,6 +75,14 @@ function getKillsFromLore(i: item) :: integer:
     set {_rawLore} to last element of ({_rawLore} split at ": ")
     set {_kills} to {_rawLore} parsed as an integer
     return {_kills}
+
+function updateKills(i: item) :: item:
+    set {_kills} to getNumberTag({_i}, "kills")
+    # set {_newKills} to ({_kills} + 1)
+    set {_newKills} to ({_kills} + 100)
+    set double tag "kills" of custom nbt of {_i} to {_newKills}
+    set line 3 of lore of {_i} to "&cKills: %{_newKills}%"
+    return {_i}
 
 function updateKillCountLore(i: item) :: item:
     set {_rawLore} to line 3 of lore of {_i}
