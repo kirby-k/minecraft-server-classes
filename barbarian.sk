@@ -108,7 +108,7 @@ on damage:
 command /givebarbarianaxe:
     permission: class.barbarian
     trigger:
-        give createClassItem({@axeItem}, {@axeItemName}, {@axeItemLore}, 8 seconds) to player
+        give createClassItem({@axeItem}, {@axeItemName}, {@axeItemLore}, "&cKills", 8 seconds) to player
         send "&6&lYour prayers have been answered..." to player
         apply nausea 1 to player for 9 seconds
         apply blindness 1 to player for 6 seconds
