@@ -1,22 +1,10 @@
 options:
     soulboundText: "&9Soulbound"
-    tag_parent: "custom"
 
 function getTag(i: item, tag: text) :: number:
-   send "in function" to all players
-   set {_path} to "%{@tag_parent}%;%{_tag}%"
-    if {_i} has nbt int tag {_path}:
-        send "passed" to all players
-        set {_value} to number tag {_path} of nbt of {_i}
-        return {_value} parsed as number
-    send "failed" to all players
-    return 0 
+    return double tag {_tag} of custom nbt of {_i}
 
-function setTag(i: item, tag: text, value: number) :: item:
-    set int tag "custom;%{_tag}%" of nbt of {_i} to {_value}
-    return {_i}
-
-function getIDFromLore(i: item) :: text:
+function getIDFromLore() :: text:
     set {_lore} to line 5 of lore of {_i}
     return last element of ({_lore} split at "ID: ")
 
@@ -55,23 +43,23 @@ function isCorrectGear(p: player, usedGear: item, classItems: texts, verbose: bo
     return false
 
 function isOnCooldown(p: player, usedGear: item) :: boolean:
-    set {_id} to getIDFromLore({_usedGear})
-    if {cooldown::%{_id}%} is set:
-        send action bar "&7Recharging..." to {_p}
-        play sound "block.note_block.bass" with pitch 0.5 to {_p}
-        return true
-    return false
+    # set {_id} to getIDFromLore({_usedGear})
+    # if {cooldown::%{_id}%} is set:
+    #     send action bar "&7Recharging..." to {_p}
+    #     play sound "block.note_block.bass" with pitch 0.5 to {_p}
+    #     return true
+    # return false
 
 function setCooldown(p: player, usedGear: item):
-    set {_id} to getIDFromLore({_usedGear})
-    set {_cooldown} to getCooldownFromLore({_usedGear})
-    set {cooldown::%{_id}%} to true
-    wait {_cooldown}
-    delete {cooldown::%{_id}%}
+    # set {_id} to getIDFromLore({_usedGear})
+    # set {_cooldown} to getCooldownFromLore({_usedGear})
+    # set {cooldown::%{_id}%} to true
+    # wait {_cooldown}
+    # delete {cooldown::%{_id}%}
 
 function createClassItem(i: item, itemName: text, loreText: text, counter: text, cooldown: timespan) :: item:
     set {_id} to random uuid
-    set {_classItem} to unbreakable {_i} named {_itemName} with lore {_loreText}
+    set {_classItem} to 1 of unbreakable {_i} named {_itemName} with lore {_loreText}
     set line 2 of lore of {_classItem} to "&7Cooldown: %{_cooldown}%"
     set line 3 of lore of {_classItem} to "%{_counter}%: 0"
     set line 4 of lore of {_classItem} to {@soulboundText}
