@@ -12,9 +12,13 @@ options:
     ig_summon_item_counter: "&cTimes Summoned"
     initial_ig_summon_item_cooldown: 100
 
+    familiar_summon_item_name: "&5&lSummon: &bFamiliar"
+    familiar_summon_item_lore: "&7Right-click to summon your familiar to your side!"
+    familiar_summon_item_counter: "&cTimes Summoned"
+
 on load:
     clear {priestessClassItemNames::*}
-    set {priestessClassItemNames::*} to {@bow_name}
+    set {priestessClassItemNames::*} to {@bow_name}, and {@ig_summon_item_name}, and {@familiar_summon_item_name}
 
 function updateHealedLife(i: item, heal: number) :: item:
     set {_totalHealed} to getNumberTag({_i}, "totalHealed")
@@ -130,65 +134,104 @@ on damage:
                 set attacker's tool to upgradeBow(attacker, attacker's tool)
                 set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 3)
 
+on death of wolf:
+    if metadata value "owner" of victim is set:
+        set {_owner} to metadata value "owner" of victim parsed as player
+        send action bar "&4Your Familiar died!" to {_owner}
+        set metadata value "isFamiliarAlive" of {_owner} to false
+
+on target:
+    if:
+        entity is a wolf
+        target is not a monster
+        # metadata value "owner" of entity is set
+        # metadata value "owner" of target is set
+        # metadata value "owner" of entity = metadata value "owner" of target
+    then:
+        cancel event
+
 on rightclick:
     if:
         isCorrectClass(player, "class.priestess") is true
-        isCorrectGear(player, player's tool, ({@ig_summon_item_name}), false) is true
-        isOnCooldown(player, player's tool) is false
+        isCorrectGear(player, player's tool, {priestessClassItemNames::*}, false) is true
     then:
-        cancel event
-        set boolean tag "isOnCooldown" of custom nbt of player's tool to true
-
-        # Spawn in Iron Golem
-        set {_loc} to location 1 blocks in front of player
-        add 1 to y-coordinate of {_loc}
-        if block at {_loc} is solid:
-            set {_loc} to player's location
-        spawn iron golem at {_loc}
-        
-        # Apply various buffs/debuffs to golem
-        set {_golem} to last spawned iron golem
-        set {_effects} to compound tag "golemEffects[0]" of custom nbt of player's tool
-        loop compound list tag "debuffs" of {_effects}:
-            set {_type} to string tag "type" of loop-value
-            set {_type} to {_type} parsed as potion effect type
-            set {_str} to int tag "strength" of loop-value
-            set {_dur} to int tag "duration" of loop-value
-            set {_dur} to "%{_dur}% seconds" parsed as timespan
-            send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_golem}%" to all players
-            apply {_type} {_str} to {_golem} for {_dur}
-
-        loop compound list tag "buffs" of {_effects}:
-            set {_type} to string tag "type" of loop-value
-            set {_type} to {_type} parsed as potion effect type
-            set {_str} to int tag "strength" of loop-value
-            set {_dur} to int tag "duration" of loop-value
-            set {_dur} to "%{_dur}% seconds" parsed as timespan
-            send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_golem}%" to all players
-            apply {_type} {_str} to {_golem} for {_dur}
-
-        # Update stats
-        set player's tool to updateSummons(player's tool)
-        
-        # Determine if summon needs to be upgraded
-        set {_totalSummons} to getNumberTag(player's tool, "totalSummons")
-        set {_lastMilestone} to getNumberTag(player's tool, "lastMilestone")
-        
-        send "debug total summons: %{_totalSummons}%" to all players
-        
-        # Bow upgrades once 3 times the previous milestone is reached
+        # Iron Golem Summon
         if:
-            getNumberTag(player's tool, "level") < 5
-            {_totalSummons} >= ({_lastMilestone} * 2)
+            isCorrectGear(player, player's tool, ({@ig_summon_item_name}), false) is true
+            isOnCooldown(player, player's tool) is false
         then:
-            set player's tool to upgradeIronGolem(player, player's tool)
-            set double tag "lastMilestone" of custom nbt of player's tool to ({_lastMilestone} * 2)
+            # Player is using one of their class items, cancel the default right click event
+            cancel event
+            set boolean tag "isOnCooldown" of custom nbt of player's tool to true
 
-        set {_c} to getTimespanTag(player's tool, "cooldown")
-        wait getTimespanTag(player's tool, "cooldown")
-        send action bar "&5Summon: &7Iron Golem Ready!" to player
-        play sound "block.note_block.chime" with pitch 2 to player
-        set boolean tag "isOnCooldown" of custom nbt of player's tool to false
+            # Spawn in Iron Golem
+            set {_loc} to location 1 blocks in front of player
+            add 1 to y-coordinate of {_loc}
+            if block at {_loc} is solid:
+                set {_loc} to player's location
+            spawn iron golem at {_loc}
+            
+            # Apply various buffs/debuffs to golem
+            set {_golem} to last spawned iron golem
+            set {_effects} to compound tag "golemEffects[0]" of custom nbt of player's tool
+
+            set name of {_golem} to getStringTag(player's tool, "name")
+            set metadata value "owner" of {_golem} to player's uuid
+            applyEffects({_golem}, {_effects})
+
+            # Update stats
+            set player's tool to updateSummons(player's tool)
+            
+            # Determine if summon needs to be upgraded
+            set {_totalSummons} to getNumberTag(player's tool, "totalSummons")
+            set {_lastMilestone} to getNumberTag(player's tool, "lastMilestone")
+            
+            send "debug total summons: %{_totalSummons}%" to all players
+            
+            # Summon upgrades once 3 times the previous milestone is reached
+            if:
+                getNumberTag(player's tool, "level") < 5
+                {_totalSummons} >= ({_lastMilestone} * 2)
+            then:
+                set player's tool to upgradeIronGolem(player, player's tool)
+                set double tag "lastMilestone" of custom nbt of player's tool to ({_lastMilestone} * 2)
+
+            set {_c} to getTimespanTag(player's tool, "cooldown")
+            wait getTimespanTag(player's tool, "cooldown")
+            send action bar "&5Summon: &7Iron Golem Ready!" to player
+            play sound "block.note_block.chime" with pitch 2 to player
+            set boolean tag "isOnCooldown" of custom nbt of player's tool to false
+
+        # Familiar Summon
+        if isCorrectGear(player, player's tool, ({@familiar_summon_item_name}), false) is true:
+            # Player is using one of their class items, cancel the default right click event
+            cancel event
+            if metadata value "isFamiliarAlive" of player is true:
+                send action bar "&5Summon: &bFamiliar is still alive!" to player
+                play sound "block.note_block.chime" with pitch 2 to player
+                stop
+
+            set metadata value "isFamiliarAlive" of player to true
+
+            # Determine Familiar spawn
+            set {_loc} to location 1 blocks in front of player
+            add 1 to y-coordinate of {_loc}
+            if block at {_loc} is solid:
+                set {_loc} to player's location
+
+            # Spawn in Familiar
+            spawn wolf at {_loc}
+            set {_familiar} to last spawned wolf
+            set name of {_familiar} to getStringTag(player's tool, "name")
+            set owner of {_familiar} to player
+            set metadata value "owner" of {_familiar} to player's uuid
+            
+            # Apply various buffs/debuffs
+            set {_effects} to compound tag "familiarEffects[0]" of custom nbt of player's tool
+            applyEffects({_familiar}, {_effects})
+
+            # Update stats
+            set player's tool to updateSummons(player's tool)
 
 command /givePriestessItems:
     permission: op
@@ -213,3 +256,13 @@ command /givePriestessItems:
         set double tag "lastMilestone" of custom nbt of {_ig_summon_item} to 25
         set compound list tag "golemEffects" of custom nbt of {_ig_summon_item} to nbt compound from "{debuffs:[{type:'slowness',strength:1,duration:9999},{type:'wither',strength:2,duration:9999}, {type:'poison',strength:4,duration:9999}],buffs:[{}]}"
         give {_ig_summon_item} to player
+
+        set {_id} to random uuid
+        set {_familiar_summon_item} to createClassItem(bone, {@familiar_summon_item_name}, {@familiar_summon_item_lore}, {@familiar_summon_item_counter}, 0)
+        set string tag "name" of custom nbt of {_familiar_summon_item} to "Familiar"
+        set double tag "level" of custom nbt of {_familiar_summon_item} to 0
+        set boolean tag "isOnCooldown" of custom nbt of {_familiar_summon_item} to false
+        set double tag "totalSummons" of custom nbt of {_familiar_summon_item} to 0
+        set double tag "lastMilestone" of custom nbt of {_familiar_summon_item} to 25
+        set compound list tag "familiarEffects" of custom nbt of {_familiar_summon_item} to nbt compound from "{buffs:[{type:'speed',strength:2,duration:9999},{type:'strength',strength:2,duration:9999}]}"
+        give {_familiar_summon_item} to player

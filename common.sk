@@ -11,6 +11,9 @@ function getTimespanTag(i: item, tag: text) :: timespan:
     set {_tag} to double tag {_tag} of custom nbt of {_i}
     return "%{_tag}% seconds" parsed as timespan
 
+function getStringTag(i: item, tag: text) :: string:
+    return string tag {_tag} of custom nbt of {_i}
+
 function getIDFromLore() :: text:
     set {_lore} to line 5 of lore of {_i}
     return last element of ({_lore} split at "ID: ")
@@ -92,6 +95,26 @@ function addEnchants(p: player, i: item, enchants: enchantment types) :: item:
     loop {_enchants::*}:
         enchant {_i} with loop-value
     return {_i}
+
+function applyEffects(t: entity, effects: object):
+    # Takes in effects, which must have the debuffs or buffs key at the top level
+    loop compound list tag "debuffs" of {_effects}:
+        set {_type} to string tag "type" of loop-value
+        set {_type} to {_type} parsed as potion effect type
+        set {_str} to int tag "strength" of loop-value
+        set {_dur} to int tag "duration" of loop-value
+        set {_dur} to "%{_dur}% seconds" parsed as timespan
+        # send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_t}%" to all players
+        apply {_type} {_str} to {_t} for {_dur}
+
+    loop compound list tag "buffs" of {_effects}:
+        set {_type} to string tag "type" of loop-value
+        set {_type} to {_type} parsed as potion effect type
+        set {_str} to int tag "strength" of loop-value
+        set {_dur} to int tag "duration" of loop-value
+        set {_dur} to "%{_dur}% seconds" parsed as timespan
+        # send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_t}%" to all players
+        apply {_type} {_str} to {_t} for {_dur}
 
 # Prevent Enchanting Table use
 on enchant prepare:
