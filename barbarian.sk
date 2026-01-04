@@ -120,7 +120,7 @@ on damage:
         set boolean tag "isOnCooldown" of custom nbt of attacker's tool to false
 
 command /givebarbarianaxe:
-    permission: class.barbarian
+    permission: op
     trigger:
         set {_axe} to createClassItem({@axeItem}, {@axeItemName}, {@axeItemLore}, "&cKills", {@initial_ability_cooldown})
         set double tag "kills" of custom nbt of {_axe} to 0

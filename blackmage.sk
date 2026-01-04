@@ -218,7 +218,7 @@ on explode:
             show 30 smoke at event-location
 
 command /givewands:
-    permission: class.blackmage
+    permission: op
     trigger:
         set {_wither_wand} to createClassItem(black candle, {@wither_wand_name}, {@wither_wand_lore}, "&cKills", {@initial_wither_wand_cooldown})
         set double tag "numberOfHeads" of custom nbt of {_wither_wand} to {@initial_wither_wand_heads}

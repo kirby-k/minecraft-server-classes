@@ -3,7 +3,7 @@ options:
 
     bow_name: "&7&lWhite Mage's Bow"
     bow_lore: "&7Arrows from this bow &aheal &7allies."
-    bow_lore_heal_mult: "0.9x"
+    bow_lore_heal_mult: "0.2x"
     bow_counter: "&cLife Healed"
     initial_heal_mult: 0.2
 
@@ -191,7 +191,7 @@ on rightclick:
         set boolean tag "isOnCooldown" of custom nbt of player's tool to false
 
 command /givePriestessItems:
-    permission: class.priestess
+    permission: op
     trigger:
         set {_bow} to createClassItem(bow, {@bow_name}, "%{@bow_lore}% Heal Multiplier: %{@bow_lore_heal_mult}%", {@bow_counter}, 0)
         set double tag "healMult" of custom nbt of {_bow} to {@initial_heal_mult}
