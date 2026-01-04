@@ -1,0 +1,215 @@
+options:
+    soulboundText: "&9Soulbound"
+
+    bow_name: "&7&lWhite Mage's Bow"
+    bow_lore: "&7Arrows from this bow &aheal &7allies."
+    bow_lore_heal_mult: "0.9x"
+    bow_counter: "&cLife Healed"
+    initial_heal_mult: 0.2
+
+    ig_summon_item_name: "&5&lSummon: &7Iron Golem"
+    ig_summon_item_lore: "&7Right-click to summon a slow, withering Iron Golem."
+    ig_summon_item_counter: "&cTimes Summoned"
+    initial_ig_summon_item_cooldown: 100
+
+on load:
+    clear {priestessClassItemNames::*}
+    set {priestessClassItemNames::*} to {@bow_name}
+
+function updateHealedLife(i: item, heal: number) :: item:
+    set {_totalHealed} to getNumberTag({_i}, "totalHealed")
+    # set {_totalHealed} to ({_heal} + {_totalHealed})
+    set {_newTotalHealed} to (25 + {_totalHealed})
+    set double tag "totalHealed" of custom nbt of {_i} to {_newTotalHealed}
+    set line 3 of lore of {_i} to "%{@bow_counter}%: %{_newTotalHealed}%"
+    return {_i}
+
+function updateSummons(i: item) :: item:
+    set {_totalSummons} to getNumberTag({_i}, "totalSummons")
+    # set {_newTotalSummons} to (1 + {_totalSummons})
+    set {_newTotalSummons} to (25 + {_totalSummons})
+    set double tag "totalSummons" of custom nbt of {_i} to {_newTotalSummons}
+    set line 3 of lore of {_i} to "%{@ig_summon_item_counter}%: %{_newTotalSummons}%"
+    return {_i}
+
+function upgradeBow(player: player, i: item) :: item:
+    set {_newHeal} to (getNumberTag({_i}, "healMult") + 0.1)
+    set {_newLevel} to (getNumberTag({_i}, "level") + 1)
+
+    send "Your bow grows stronger - Level %{_newLevel}%" to {_player}
+
+    set double tag "level" of custom nbt of {_i} to {_newLevel}
+    set double tag "healMult" of custom nbt of {_i} to {_newHeal}
+    set line 1 of lore of {_i} to "&7Level %{_newLevel}%: %{@bow_lore}% Heal Multiplier: %{_newHeal}%x"
+
+    if {_newLevel} is 2:
+        enchant {_i} with punch 1
+    if {_newLevel} is 3:
+        enchant {_i} with flame 1
+    if {_newLevel} is 4:    
+        enchant {_i} with power 2
+    if {_newLevel} is 5:    
+        enchant {_i} with power 3
+        enchant {_i} with punch 2
+    return {_i}
+
+function upgradeIronGolem(player: player, i: item) :: item:
+    # set {_newCooldown} to getNumberTag({_i}, "cooldown") - 5
+    set double tag "cooldown" of custom nbt of {_i} to {_newCooldown}
+    set line 2 of lore of {_i} to "&7Cooldown: %{_newCooldown}%"
+
+    set {_newLevel} to (getNumberTag({_i}, "level") + 1)
+    send "Your summon grows stronger - Level %{_newLevel}%" to {_player}
+    set double tag "level" of custom nbt of {_i} to {_newLevel}
+
+    if {_newLevel} is 2:
+        set line 1 of lore of {_i} to "&7Level %{_newLevel}%: Right-click to summon a withering Iron Golem!"
+        set compound list tag "golemEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'wither',strength:2,duration:9999}, {type:'poison',strength:4,duration:9999}],buffs:[{}]}"
+    if {_newLevel} is 3:
+        set line 1 of lore of {_i} to "&7Level %{_newLevel}%: Right-click to summon a faster, withering Iron Golem!"
+        set compound list tag "golemEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'wither',strength:2,duration:9999}, {type:'poison',strength:4,duration:9999}],buffs:[{type:'speed',strength:1,duration:9999}]}"
+    if {_newLevel} is 4:    
+        set line 1 of lore of {_i} to "&7Level %{_newLevel}%: Right-click to summon a faster, stronger withering Iron Golem!"
+        set compound list tag "golemEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'wither',strength:2,duration:9999}],buffs:[{type:'strength',strength:1,duration:9999}, {type:'speed',strength:1,duration:9999}]}"
+    if {_newLevel} is 5:    
+        set line 1 of lore of {_i} to "&7Level %{_newLevel}%: Right-click to summon a faster, stronger, less-withered Iron Golem!"
+        set compound list tag "golemEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'wither',strength:1,duration:9999}, {type:'poison',strength:1,duration:9999}],buffs:[{type:'strength',strength:1,duration:9999}, {type:'speed',strength:1,duration:9999}]}"
+    return {_i}
+
+# Priestess can only use the bow
+on damage:
+    if:
+        attacker is a player
+        projectile is an arrow
+        victim is a living entity
+        isCorrectClass(attacker, "class.priestess") is true
+        isCorrectGear(attacker, attacker's tool, ({@bow_name}), false) is true
+    then:
+        if victim is a monster:
+            # Deal damage to monsters
+            set {_arrowDamage} to damage
+            send "debug: This would have done %{_arrowDamage}%" to all players
+            set {_finalDamage} to ({_arrowDamage} * getNumberTag(attacker's tool, "healMult"))
+            set damage to {_finalDamage}
+            set {_finalDamage} to ({_finalDamage} * 2)
+            send "debug: final damage %{_finalDamage}%" to all players
+            stop
+        else:
+            # Heal everything else
+
+            set {_arrowDamage} to damage
+            cancel event
+            send "debug: This would have done %{_arrowDamage}%" to all players
+            
+            # Heal the victim by damage * multiplier
+            set {_heal} to ({_arrowDamage} * getNumberTag(attacker's tool, "healMult"))
+            send "debug: final heal %{_heal}%" to all players
+            heal victim by {_heal} 
+            
+            send action bar "&aYou healed %victim% for %{_heal}%!" to attacker
+            
+            send action bar "&a%attacker% healed you!" to victim
+            play sound "entity.experience_orb.pickup" with volume 1 and pitch 2 to victim
+            show 15 heart at victim's head
+            
+            # Cleanup the arrow so it doesn't stick in the person
+            delete projectile
+
+            # Update stats
+            set attacker's tool to updateHealedLife(attacker's tool, getNumberTag(attacker's tool, "healMult"))
+            
+            # Determine if bow needs to be upgraded
+            set {_totalHealed} to getNumberTag(attacker's tool, "totalHealed")
+            set {_lastMilestone} to getNumberTag(attacker's tool, "lastMilestone")
+            
+            # Bow upgrades once 3 times the previous milestone is reached
+            if:
+                getNumberTag(attacker's tool, "level") < 5
+                {_totalHealed} >= ({_lastMilestone} * 3)
+            then:
+                set attacker's tool to upgradeBow(attacker, attacker's tool)
+                set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 3)
+
+on rightclick:
+    if:
+        isCorrectClass(player, "class.priestess") is true
+        isCorrectGear(player, player's tool, ({@ig_summon_item_name}), false) is true
+        isOnCooldown(player, player's tool) is false
+    then:
+        cancel event
+        set boolean tag "isOnCooldown" of custom nbt of player's tool to true
+
+        # Spawn in Iron Golem
+        set {_loc} to location 1 blocks in front of player
+        add 1 to y-coordinate of {_loc}
+        if block at {_loc} is solid:
+            set {_loc} to player's location
+        spawn iron golem at {_loc}
+        
+        # Apply various buffs/debuffs to golem
+        set {_golem} to last spawned iron golem
+        set {_effects} to compound tag "golemEffects[0]" of custom nbt of player's tool
+        loop compound list tag "debuffs" of {_effects}:
+            set {_type} to string tag "type" of loop-value
+            set {_type} to {_type} parsed as potion effect type
+            set {_str} to int tag "strength" of loop-value
+            set {_dur} to int tag "duration" of loop-value
+            set {_dur} to "%{_dur}% seconds" parsed as timespan
+            send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_golem}%" to all players
+            apply {_type} {_str} to {_golem} for {_dur}
+
+        loop compound list tag "buffs" of {_effects}:
+            set {_type} to string tag "type" of loop-value
+            set {_type} to {_type} parsed as potion effect type
+            set {_str} to int tag "strength" of loop-value
+            set {_dur} to int tag "duration" of loop-value
+            set {_dur} to "%{_dur}% seconds" parsed as timespan
+            send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_golem}%" to all players
+            apply {_type} {_str} to {_golem} for {_dur}
+
+        # Update stats
+        set player's tool to updateSummons(player's tool)
+        
+        # Determine if summon needs to be upgraded
+        set {_totalSummons} to getNumberTag(player's tool, "totalSummons")
+        set {_lastMilestone} to getNumberTag(player's tool, "lastMilestone")
+        
+        send "debug total summons: %{_totalSummons}%" to all players
+        
+        # Bow upgrades once 3 times the previous milestone is reached
+        if:
+            getNumberTag(player's tool, "level") < 5
+            {_totalSummons} >= ({_lastMilestone} * 2)
+        then:
+            set player's tool to upgradeIronGolem(player, player's tool)
+            set double tag "lastMilestone" of custom nbt of player's tool to ({_lastMilestone} * 2)
+
+        set {_c} to getTimespanTag(player's tool, "cooldown")
+        wait getTimespanTag(player's tool, "cooldown")
+        send action bar "&5Summon: &7Iron Golem Ready!" to player
+        play sound "block.note_block.chime" with pitch 2 to player
+        set boolean tag "isOnCooldown" of custom nbt of player's tool to false
+
+command /givePriestessItems:
+    permission: class.priestess
+    trigger:
+        set {_bow} to createClassItem(bow, {@bow_name}, "%{@bow_lore}% Heal Multiplier: %{@bow_lore_heal_mult}%", {@bow_counter}, 0)
+        set double tag "healMult" of custom nbt of {_bow} to {@initial_heal_mult}
+        set double tag "level" of custom nbt of {_bow} to 0
+        set double tag "maxLevel" of custom nbt of {_bow} to 5
+        set boolean tag "levelUpSummons" of custom nbt of {_bow} to false
+        set double tag "totalHealed" of custom nbt of {_bow} to 0
+        set double tag "lastMilestone" of custom nbt of {_bow} to 25
+        enchant {_bow} with infinity 1
+        give {_bow} to player
+        give 1 arrow to player
+
+        set {_ig_summon_item} to createClassItem(wither rose, {@ig_summon_item_name}, {@ig_summon_item_lore}, {@ig_summon_item_counter}, {@initial_ig_summon_item_cooldown})
+        set string tag "name" of custom nbt of {_ig_summon_item} to "Fernando"
+        set double tag "level" of custom nbt of {_ig_summon_item} to 0
+        set double tag "cooldown" of custom nbt of {_ig_summon_item} to {@initial_ig_summon_item_cooldown}
+        set boolean tag "isOnCooldown" of custom nbt of {_ig_summon_item} to false
+        set double tag "totalSummons" of custom nbt of {_ig_summon_item} to 0
+        set double tag "lastMilestone" of custom nbt of {_ig_summon_item} to 25
+        set compound list tag "golemEffects" of custom nbt of {_ig_summon_item} to nbt compound from "{debuffs:[{type:'slowness',strength:1,duration:9999},{type:'wither',strength:2,duration:9999}, {type:'poison',strength:4,duration:9999}],buffs:[{}]}"
+        give {_ig_summon_item} to player

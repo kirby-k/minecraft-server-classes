@@ -2,12 +2,13 @@ options:
     soulboundText: "&9Soulbound"
 
     wither_wand_name: "&8&lWither Wand"
-    wither_wand_lore: "&7&7Level 0: Right-click to shoot a Wither head!"
+    wither_wand_lore: "&7Right-click to shoot a Wither head!"
     initial_wither_wand_cooldown: 1
     initial_wither_wand_heads: 1
+    initial_wither_wand_speed: 1
 
     drain_wand_name: "&a&lDrain Wand"
-    drain_wand_lore: "&7Level 0: Hold Sneak, then Right-click to drain 1 HP from living targets!"
+    drain_wand_lore: "&7Hold Sneak, then Right-click to drain 1 HP from living targets!"
     drain_wand_counter: "&cLife Drained"
     initial_drain_wand_damage: 1
     initial_drain_wand_cooldown: 1.5
@@ -19,11 +20,10 @@ on load:
 
 function updateDrainedLife(i: item, drained: number) :: item:
     set {_drainedLife} to getNumberTag({_i}, "totalDrained")
-    # set {_totalDrained} to ({_drained} + {_drainedLife})
-    set {_totalDrained} to (500 + {_drainedLife})
+    set {_totalDrained} to ({_drained} + {_drainedLife})
+    # set {_totalDrained} to (100 + {_drainedLife})
     set double tag "totalDrained" of custom nbt of {_i} to {_totalDrained}
     set line 3 of lore of {_i} to "%{@drain_wand_counter}%: %{_totalDrained}%"
-    send "%{@drain_wand_counter}%: %{_totalDrained}%" to all players
     return {_i}
 
 function upgradeWitherWand(player: player, i: item) :: item:
@@ -35,16 +35,18 @@ function upgradeWitherWand(player: player, i: item) :: item:
     set double tag "cooldown" of custom nbt of {_i} to {_newCooldown}
     set double tag "level" of custom nbt of {_i} to {_newLevel}
 
-    set line 1 of lore of {_i} to "&7Level %{_newLevel}%: %{@wither_wand_lore}"
+    set line 1 of lore of {_i} to "&7Level %{_newLevel}%: %{@wither_wand_lore}%"
     set line 2 of lore of {_i} to "&7Cooldown: %{_newCooldown}%"
+    if {_newLevel} is 2:
+        set double tag "skullSpeed" of custom nbt of {_i} to (getNumberTag({_i}, "skullSpeed") + 1)
     if {_newLevel} is 3:
-        set line 1 of lore of {_i} to "&7Level %{_newLevel}%: Hold Sneak, then Right-click to drain %{_newWither}% HP and speed from living targets, and applies weak Wither on-hit!"
+        set double tag "skullSpeed" of custom nbt of {_i} to (getNumberTag({_i}, "skullSpeed") + 1)
     if {_newLevel} is 4:    
         set double tag "numberOfHeads" of custom nbt of {_i} to 2
-        set line 1 of lore of {_i} to "&5Level %{_newLevel}%: &7Hold Sneak, then Right-click to drain %{_newWither}% HP and greater speed from living targets, and applies Wither on-hit!"
+        set line 1 of lore of {_i} to "&7Level %{_newLevel}%: %{@wither_wand_lore}%"
     if {_newLevel} is 5:    
         set double tag "numberOfHeads" of custom nbt of {_i} to 3
-        set line 1 of lore of {_i} to "&6Level %{_newLevel}%: &7Hold Sneak, then Right-click to drain %{_newWither}% HP and greater speed from living targets, and applies greater Wither on-hit!"
+        set double tag "skullSpeed" of custom nbt of {_i} to (getNumberTag({_i}, "skullSpeed") + 1)
     return {_i}
 
 function upgradeDrainWand(player: player, i: item) :: item:
@@ -61,116 +63,124 @@ function upgradeDrainWand(player: player, i: item) :: item:
     set line 1 of lore of {_i} to "&7Level %{_newLevel}%: Hold Sneak, then Right-click to drain %{_newDrain}% HP from living targets!"
     set line 2 of lore of {_i} to "&7Cooldown: %{_newCooldown}%"
     if {_newLevel} is 3:
-        set compound list tag "secondaryEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'slowness',strength:1,duration:2},{type:'wither',strength:2,duration:2}],buffs:[{type:'speed',strength:1,duration:4}]}"
+        set compound list tag "secondaryEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'slowness',strength:1,duration:2},{type:'wither',strength:2,duration:2}],buffs:[{type:'speed',strength:1,duration:2}]}"
         set line 1 of lore of {_i} to "&7Level %{_newLevel}%: Hold Sneak, then Right-click to drain %{_newDrain}% HP and speed from living targets, and applies weak Wither on-hit!"
     if {_newLevel} is 4:    
-        set compound list tag "secondaryEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'slowness',strength:2,duration:2},{type:'wither',strength:3,duration:2}],buffs:[{type:'speed',strength:2,duration:4}]}"
+        set compound list tag "secondaryEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'slowness',strength:2,duration:2},{type:'wither',strength:3,duration:2}],buffs:[{type:'speed',strength:2,duration:2}]}"
         set line 1 of lore of {_i} to "&5Level %{_newLevel}%: &7Hold Sneak, then Right-click to drain %{_newDrain}% HP and greater speed from living targets, and applies Wither on-hit!"
     if {_newLevel} is 5:    
-        set compound list tag "secondaryEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'slowness',strength:2,duration:2},{type:'wither',strength:4,duration:2}],buffs:[{type:'speed',strength:2,duration:4}]}"
+        set compound list tag "secondaryEffects" of custom nbt of {_i} to nbt compound from "{debuffs:[{type:'slowness',strength:2,duration:2},{type:'wither',strength:4,duration:2}],buffs:[{type:'speed',strength:2,duration:2}]}"
         set line 1 of lore of {_i} to "&6Level %{_newLevel}%: &7Hold Sneak, then Right-click to drain %{_newDrain}% HP and greater speed from living targets, and applies greater Wither on-hit!"
     return {_i}
 
+function isDrainTargetValid(player: player, tool: item, target: entity) :: boolean:
+    if {_target} is not set:
+        send action bar "&7No target found!" to {_player}
+        return false
+    else if distance between {_player} and {_target} is greater than (getNumberTag({_tool}, "range") + 2):
+        send action bar "&cTarget is too far away!" to {_player}
+        return false
+    else if {_player} is not sneaking:
+        send action bar "&7You must be sneaking!" to {_player}
+        return false
+    else if isCorrectGear({_player}, {_tool}, ({@drain_wand_name}), false) is false:
+        send action bar "&7You are no longer holding the Drain Wand!" to {_player}
+        return false
+    else:
+        return true
+
 # Black mage can only use wands
 on damage:
-    if attacker is not a player:
-        stop
-    if isCorrectClass(attacker, "class.blackmage") is true:
-        if isCorrectGear(attacker, attacker's tool, {blackMageClassItemNames::*}) is false:
-            cancel event
-            stop
-
-        if isCorrectGear(attacker, attacker's tool, ({@drain_wand_name}), false) is true:
-            # Update total damage dealt on wand
-            set attacker's tool to updateDrainedLife(attacker's tool, getNumberTag(attacker's tool, "damage"))
-            
-            # Determine if wand needs to be upgraded
-            set {_totalDrained} to getNumberTag(attacker's tool, "totalDrained")
-            set {_lastMilestone} to getNumberTag(attacker's tool, "lastMilestone")
-            
-            # Wand upgrades once 3 times the previous milestone is reached
-            if {_TotalDrained} >= ({_lastMilestone} * 3):
-                set attacker's tool to upgradeDrainWand(attacker, attacker's tool)
-                set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 3)
+    if:
+        attacker is a player
+        isCorrectClass(attacker, "class.blackmage") is true
+        isCorrectGear(attacker, attacker's tool, ({@drain_wand_name}), false) is true
+    then:
+        # Update total damage dealt on wand
+        set attacker's tool to updateDrainedLife(attacker's tool, getNumberTag(attacker's tool, "damage"))
+        
+        # Determine if wand needs to be upgraded
+        set {_totalDrained} to getNumberTag(attacker's tool, "totalDrained")
+        set {_lastMilestone} to getNumberTag(attacker's tool, "lastMilestone")
+        
+        # Wand upgrades once 3 times the previous milestone is reached
+        if:
+            getNumberTag(attacker's tool, "level") < 5
+            {_totalDrained} >= ({_lastMilestone} * 3)
+        then:
+            set attacker's tool to upgradeDrainWand(attacker, attacker's tool)
+            set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 3)
 
 on death:
-    if attacker is not a player:
-        stop
-    if isCorrectClass(attacker, "class.blackmage") is true:
-        if isCorrectGear(attacker, attacker's tool, {blackMageClassItemNames::*}, false) is false:
-            stop
-
-        if isCorrectGear(attacker, attacker's tool, ({@wither_wand_name}), false) is true:
-            # Update total kills on wand
-            set attacker's tool to updateKills(attacker's tool, getNumberTag(attacker's tool, "damage"))
-            
-            # Determine if wand needs to be upgraded
-            set {_totalKills} to getNumberTag(attacker's tool, "totalKills")
-            set {_lastMilestone} to getNumberTag(attacker's tool, "lastMilestone")
-            
-            # Wand upgrades once 2 times the previous milestone is reached
-            if {_totalKills} >= ({_lastMilestone} * 2):
-                set attacker's tool to upgradeWitherWand(attacker, attacker's tool)
-                set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 3)
+    if:
+        attacker is a player
+        isCorrectClass(attacker, "class.blackmage") is true
+        isCorrectGear(attacker, attacker's tool, ({@wither_wand_name}), false) is true
+    then:
+        # Update total kills on wand
+        set attacker's tool to updateKills(attacker's tool)
+        
+        # Determine if wand needs to be upgraded
+        set {_totalKills} to getNumberTag(attacker's tool, "kills")
+        set {_lastMilestone} to getNumberTag(attacker's tool, "lastMilestone")
+        
+        # Wand upgrades once 2 times the previous milestone is reached
+        if:
+            getNumberTag(attacker's tool, "level") < 5
+            {_totalKills} >= ({_lastMilestone} * 2.5)
+        then:
+            set attacker's tool to upgradeWitherWand(attacker, attacker's tool)
+            set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 2.5)
 
 on rightclick:
-    if isCorrectClass(player, "class.blackmage") is true:
-        if isCorrectGear(player, player's tool, {blackMageClassItemNames::*}, false) is false:
-            stop
+    if:
+        isCorrectClass(player, "class.blackmage") is true
+        # Needed here to tell the user the full list of items their class can use
+        isCorrectGear(player, player's tool, {blackMageClassItemNames::*}, false) is true
+    then:
+        # Player is using one of their class items, cancel the default right click event
+        cancel event
 
-        if isCorrectGear(player, player's tool, ({@wither_wand_name}), false) is true:
-            if isOnCooldown(player, player's tool) is true:
+        # Wither Wand Right Click
+        if:
+            isCorrectGear(player, player's tool, ({@wither_wand_name}), false) is true
+            isOnCooldown(player, player's tool) is false
+        then:
+            cancel event
+            set boolean tag "isOnCooldown" of custom nbt of player's tool to true
+            loop getNumberTag(player's tool, "numberOfHeads") times:
+                make player shoot a wither skull at speed getNumberTag(player's tool, "skullSpeed")
+                wait 3 ticks
+            set {_c} to getTimespanTag(player's tool, "cooldown")
+            wait getTimespanTag(player's tool, "cooldown")
+            set boolean tag "isOnCooldown" of custom nbt of player's tool to false
+
+        # Drain Wand Right Click
+        if:
+            isCorrectGear(player, player's tool, ({@drain_wand_name}), false) is true
+            # Make sure we only allow the player to drain once at a time
+            player is sneaking
+        then:
+            if metadata value "draining" of player is true:
                 stop
-            else:
-                cancel event
-                make player shoot a wither skull at speed 2
-                setCooldown(player, player's tool)
+            # Player is attempting to drain, don't let them start a new drain process until this one finishes
+            set metadata value "draining" of player to true
 
-        if isCorrectGear(player, player's tool, ({@drain_wand_name}), false) is true:
-            if player is sneaking:
-                if metadata value "draining" of player is set:
-                    # Player is still draining from the last right-click
-                    cancel event
-                    stop
+            # Check initial target is valid
+            set {_target} to target entity
+            if isDrainTargetValid(player, player's tool, {_target}) is true:
+                send action bar "&cDraining &7life from &c%name of {_target}%&7..." to player
 
-                set metadata value "draining" of player to true
-                set {_target} to target entity
+                # Wait for cooldown, recheck the player is still has a lock on the target
+                wait getTimespanTag(player's tool, "cooldown")
 
-                if {_target} is not set:
-                    send action bar "&7No target found!" to player
-                    delete metadata value "draining" of player
-                    stop
-                if distance between player and {_target} is greater than {@initial_drain_wand_range}:
-                    send action bar "&7Target too far!" to player
-                    delete metadata value "draining" of player
-                    stop
-
-                while isCorrectGear(player, player's tool, ({@drain_wand_name}), false) is true:
-                    send action bar "&cDraining &7life from &c%name of {_target}%&7..." to player
-
-                    wait getTimespanTag(player's tool, "cooldown")
-                    set {_target} to target entity
-
-                    if {_target} is not set:
-                        send action bar "&7Link broken: Target lost!" to player
-                        stop loop
-                    if distance between player and {_target} is greater than getNumberTag(player's tool, "range") + 2:
-                        send action bar "&cLink broken: Distance too great!" to player
-                        stop loop
-                    if player is not sneaking:
-                        send action bar "&7Link broken: You are no longer sneaking!" to player
-                        stop loop
-                    if isCorrectGear(player, player's tool, ({@drain_wand_name}), false) is false:
-                        send action bar "&7Link broken: You are no longer holding the Drain Wand!" to player
-                        stop loop
-
+                if isDrainTargetValid(player, player's tool, {_target}) is true:
                     # Primary effects
                     make player damage {_target} by (getNumberTag(player's tool, "damage") / 2)
                     heal player by (getNumberTag(player's tool, "damage") / 2)
                     
                     # Secondary effects
                     set {_effects} to compound tag "secondaryEffects[0]" of custom nbt of player's tool
-                    send "debug: list of effects: %{_effects}%" to all players
                     loop compound list tag "debuffs" of {_effects}:
                         set {_type} to string tag "type" of loop-value
                         set {_type} to {_type} parsed as potion effect type
@@ -187,6 +197,7 @@ on rightclick:
                         set {_dur} to "%{_dur}% seconds" parsed as timespan
                         apply {_type} {_str} to player for {_dur}
 
+                    # Pretty effects to show drain
                     set {_targetHead} to eye location of {_target}
                     loop 10 times:
                         show 1 smoke at {_targetHead}
@@ -195,6 +206,7 @@ on rightclick:
                     set {_playerEye} to location 1 block in front of {_eye}
                     show 1 heart at {_playerEye}
 
+            # Allow player to try and drain again
             delete metadata value "draining" of player
 
 # Wither skulls should not cause block damage
@@ -208,17 +220,24 @@ on explode:
 command /givewands:
     permission: class.blackmage
     trigger:
-        set {_wither_wand} to createClassItem(black candle, {@wither_wand_name}, {@wither_wand_lore}, "&cKills", {@wither_wand_cooldown})
-        set double tag "numberOfHeads" of custom nbt of {_i} to {@initial_wither_wand_heads}
-        set double tag "cooldown" of custom nbt of {_drain_wand} to {@initial_wither_wand_cooldown}
-        set double tag "lastMilestone" of custom nbt of {_drain_wand} to 1
+        set {_wither_wand} to createClassItem(black candle, {@wither_wand_name}, {@wither_wand_lore}, "&cKills", {@initial_wither_wand_cooldown})
+        set double tag "numberOfHeads" of custom nbt of {_wither_wand} to {@initial_wither_wand_heads}
+        set double tag "skullSpeed" of custom nbt of {_wither_wand} to {@initial_wither_wand_speed}
+        set double tag "cooldown" of custom nbt of {_wither_wand} to {@initial_wither_wand_cooldown}
+        set double tag "level" of custom nbt of {_wither_wand} to 0
+        set double tag "maxLevel" of custom nbt of {_wither_wand} to 5
+        set boolean tag "isOnCooldown" of custom nbt of {_wither_wand} to false
+        set double tag "kills" of custom nbt of {_wither_wand} to 0
+        set double tag "lastMilestone" of custom nbt of {_wither_wand} to 25
         give {_wither_wand} to player
 
         set {_drain_wand} to createClassItem(brush, {@drain_wand_name}, {@drain_wand_lore}, {@drain_wand_counter}, {@initial_drain_wand_cooldown})
         set double tag "damage" of custom nbt of {_drain_wand} to 1
         set double tag "range" of custom nbt of {_drain_wand} to {@initial_drain_wand_range}
         set double tag "cooldown" of custom nbt of {_drain_wand} to {@initial_drain_wand_cooldown}
+        set boolean tag "isOnCooldown" of custom nbt of {_drain_wand} to false
         set double tag "level" of custom nbt of {_drain_wand} to 0
+        set double tag "maxLevel" of custom nbt of {_drain_wand} to 5
         set double tag "totalDrained" of custom nbt of {_drain_wand} to 0
         set double tag "lastMilestone" of custom nbt of {_drain_wand} to 50
         give {_drain_wand} to player
