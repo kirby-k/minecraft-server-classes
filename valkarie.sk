@@ -1,0 +1,21 @@
+# on damage of player:
+#     if damage cause is fall:
+#         if metadata value "leap_protect" of victim is true:
+#             cancel event
+#             delete metadata value "leap_protect" of victim
+#             play sound "entity.generic.small_fall" with volume 0.5 to victim
+
+            # set {_v} to vector in direction of player
+            # set standard length of {_v} to {@leap_power}
+            # set y of {_v} to {@leap_vertical}
+            # set velocity of player to {_v}
+            
+            # play sound "entity.bat.takeoff" with pitch 0.5 to player
+            # show 20 cloud at player's location
+            
+            # setCooldown(player, player's tool)
+            # send "no fall damage" to player
+            # set metadata value "leap_protect" of player to true
+            # wait 2 seconds
+            # delete metadata value "leap_protect" of player
+            # send "fall damage restored" to player

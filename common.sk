@@ -1,7 +1,17 @@
 options:
     soulboundText: "&9Soulbound"
 
-function getIDFromLore(i: item) :: text:
+function getNumberTag(i: item, tag: text) :: number:
+    return double tag {_tag} of custom nbt of {_i}
+
+function getBooleanTag(i: item, tag: text) :: boolean:
+    return boolean tag {_tag} of custom nbt of {_i}
+
+function getTimespanTag(i: item, tag: text) :: timespan:
+    set {_tag} to double tag {_tag} of custom nbt of {_i}
+    return "%{_tag}% seconds" parsed as timespan
+
+function getIDFromLore() :: text:
     set {_lore} to line 5 of lore of {_i}
     return last element of ({_lore} split at "ID: ")
 
@@ -40,25 +50,18 @@ function isCorrectGear(p: player, usedGear: item, classItems: texts, verbose: bo
     return false
 
 function isOnCooldown(p: player, usedGear: item) :: boolean:
-    set {_id} to getIDFromLore({_usedGear})
-    if {cooldown::%{_id}%} is set:
+    if getBooleanTag({_usedGear}, "isOnCooldown") is true:
         send action bar "&7Recharging..." to {_p}
         play sound "block.note_block.bass" with pitch 0.5 to {_p}
         return true
-    return false
+    else:
+        return false
 
-function setCooldown(p: player, usedGear: item):
-    set {_id} to getIDFromLore({_usedGear})
-    set {_cooldown} to getCooldownFromLore({_usedGear})
-    set {cooldown::%{_id}%} to true
-    wait {_cooldown}
-    delete {cooldown::%{_id}%}
-
-function createClassItem(i: item, itemName: text, loreText: text, cooldown: timespan) :: item:
+function createClassItem(i: item, itemName: text, loreText: text, counter: text, cooldown: number) :: item:
     set {_id} to random uuid
-    set {_classItem} to unbreakable {_i} named {_itemName} with lore {_loreText}
-    set line 2 of lore of {_classItem} to "&7Cooldown: %{_cooldown}%"
-    set line 3 of lore of {_classItem} to "&cKills: 0"
+    set {_classItem} to 1 of unbreakable {_i} named {_itemName} with lore {_loreText}
+    set line 2 of lore of {_classItem} to "&7Cooldown: %{_cooldown}% seconds"
+    set line 3 of lore of {_classItem} to "%{_counter}%: 0"
     set line 4 of lore of {_classItem} to {@soulboundText}
     set line 5 of lore of {_classItem} to "&8ID: %{_id}%"
     return {_classItem}
@@ -69,19 +72,19 @@ function getKillsFromLore(i: item) :: integer:
     set {_kills} to {_rawLore} parsed as an integer
     return {_kills}
 
+function updateKills(i: item) :: item:
+    set {_kills} to getNumberTag({_i}, "kills")
+    # set {_newKills} to ({_kills} + 1)
+    set {_newKills} to ({_kills} + 25)
+    set double tag "kills" of custom nbt of {_i} to {_newKills}
+    set line 3 of lore of {_i} to "&cKills: %{_newKills}%"
+    return {_i}
+
 function updateKillCountLore(i: item) :: item:
     set {_rawLore} to line 3 of lore of {_i}
     set {_kills} to getKillsFromLore({_i})
     add 25 to {_kills}
     set line 3 of lore of {_i} to "&cKills: %{_kills}%"
-    return {_i}
-
-function upgradeItem(p: player, i: item, newType: item, cooldown: timespan) :: item:
-    send "&2Your %name of {_i}% &2glows brightly as it transforms!" to {_p}
-    set {_oldLore::*} to lore of {_i}
-    set {_i} to unbreakable {_newType} named name of {_i}
-    set lore of {_i} to {_oldLore::*}
-    set line 2 of lore of {_i} to "&7Cooldown: %{_cooldown}%"
     return {_i}
 
 function addEnchants(p: player, i: item, enchants: enchantment types) :: item:
