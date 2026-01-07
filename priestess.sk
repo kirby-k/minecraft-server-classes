@@ -1,18 +1,18 @@
 options:
     soulboundText: "&9Soulbound"
 
-    bow_name: "&7&lWhite Mage's Bow"
+    bow_name: "&f&lPriestess Bow"
     bow_lore: "&7Arrows from this bow &aheal &7allies."
     bow_lore_heal_mult: "0.2x"
     bow_counter: "&cLife Healed"
     initial_heal_mult: 0.2
 
-    ig_summon_item_name: "&5&lSummon: &7Iron Golem"
+    ig_summon_item_name: "&5&lSummon: &f&lIron Golem"
     ig_summon_item_lore: "&7Right-click to summon a slow, withering Iron Golem."
     ig_summon_item_counter: "&cTimes Summoned"
     initial_ig_summon_item_cooldown: 100
 
-    familiar_summon_item_name: "&5&lSummon: &bFamiliar"
+    familiar_summon_item_name: "&5&lSummon: &b&lFamiliar"
     familiar_summon_item_lore: "&7Right-click to summon your familiar to your side!"
     familiar_summon_item_counter: "&cTimes Summoned"
 
@@ -22,16 +22,14 @@ on load:
 
 function updateHealedLife(i: item, heal: number) :: item:
     set {_totalHealed} to getNumberTag({_i}, "totalHealed")
-    # set {_totalHealed} to ({_heal} + {_totalHealed})
-    set {_newTotalHealed} to (25 + {_totalHealed})
+    set {_totalHealed} to ({_heal} + {_totalHealed})
     set double tag "totalHealed" of custom nbt of {_i} to {_newTotalHealed}
     set line 3 of lore of {_i} to "%{@bow_counter}%: %{_newTotalHealed}%"
     return {_i}
 
 function updateSummons(i: item) :: item:
     set {_totalSummons} to getNumberTag({_i}, "totalSummons")
-    # set {_newTotalSummons} to (1 + {_totalSummons})
-    set {_newTotalSummons} to (25 + {_totalSummons})
+    set {_newTotalSummons} to (1 + {_totalSummons})
     set double tag "totalSummons" of custom nbt of {_i} to {_newTotalSummons}
     set line 3 of lore of {_i} to "%{@ig_summon_item_counter}%: %{_newTotalSummons}%"
     return {_i}
@@ -51,14 +49,14 @@ function upgradeBow(player: player, i: item) :: item:
     if {_newLevel} is 3:
         enchant {_i} with flame 1
     if {_newLevel} is 4:    
-        enchant {_i} with power 2
+        enchant {_i} with power 1
     if {_newLevel} is 5:    
-        enchant {_i} with power 3
+        enchant {_i} with power 2
         enchant {_i} with punch 2
     return {_i}
 
 function upgradeIronGolem(player: player, i: item) :: item:
-    # set {_newCooldown} to getNumberTag({_i}, "cooldown") - 5
+    set {_newCooldown} to getNumberTag({_i}, "cooldown") - 5
     set double tag "cooldown" of custom nbt of {_i} to {_newCooldown}
     set line 2 of lore of {_i} to "&7Cooldown: %{_newCooldown}%"
 
@@ -92,22 +90,19 @@ on damage:
         if victim is a monster:
             # Deal damage to monsters
             set {_arrowDamage} to damage
-            send "debug: This would have done %{_arrowDamage}%" to all players
-            set {_finalDamage} to ({_arrowDamage} * getNumberTag(attacker's tool, "healMult"))
-            set damage to {_finalDamage}
+            set {_healMult} to getNumberTag(attacker's tool, "healMult")
+            set {_finalDamage} to ({_arrowDamage} * {_healMult})
             set {_finalDamage} to ({_finalDamage} * 2)
-            send "debug: final damage %{_finalDamage}%" to all players
+            set damage to {_finalDamage}
             stop
         else:
             # Heal everything else
 
             set {_arrowDamage} to damage
             cancel event
-            send "debug: This would have done %{_arrowDamage}%" to all players
             
             # Heal the victim by damage * multiplier
             set {_heal} to ({_arrowDamage} * getNumberTag(attacker's tool, "healMult"))
-            send "debug: final heal %{_heal}%" to all players
             heal victim by {_heal} 
             
             send action bar "&aYou healed %victim% for %{_heal}%!" to attacker
@@ -144,9 +139,6 @@ on target:
     if:
         entity is a wolf
         target is not a monster
-        # metadata value "owner" of entity is set
-        # metadata value "owner" of target is set
-        # metadata value "owner" of entity = metadata value "owner" of target
     then:
         cancel event
 
@@ -185,8 +177,6 @@ on rightclick:
             # Determine if summon needs to be upgraded
             set {_totalSummons} to getNumberTag(player's tool, "totalSummons")
             set {_lastMilestone} to getNumberTag(player's tool, "lastMilestone")
-            
-            send "debug total summons: %{_totalSummons}%" to all players
             
             # Summon upgrades once 3 times the previous milestone is reached
             if:
@@ -253,7 +243,7 @@ command /givePriestessItems:
         set double tag "cooldown" of custom nbt of {_ig_summon_item} to {@initial_ig_summon_item_cooldown}
         set boolean tag "isOnCooldown" of custom nbt of {_ig_summon_item} to false
         set double tag "totalSummons" of custom nbt of {_ig_summon_item} to 0
-        set double tag "lastMilestone" of custom nbt of {_ig_summon_item} to 25
+        set double tag "lastMilestone" of custom nbt of {_ig_summon_item} to 10
         set compound list tag "golemEffects" of custom nbt of {_ig_summon_item} to nbt compound from "{debuffs:[{type:'slowness',strength:1,duration:9999},{type:'wither',strength:2,duration:9999}, {type:'poison',strength:4,duration:9999}],buffs:[{}]}"
         give {_ig_summon_item} to player
 
@@ -264,5 +254,5 @@ command /givePriestessItems:
         set boolean tag "isOnCooldown" of custom nbt of {_familiar_summon_item} to false
         set double tag "totalSummons" of custom nbt of {_familiar_summon_item} to 0
         set double tag "lastMilestone" of custom nbt of {_familiar_summon_item} to 25
-        set compound list tag "familiarEffects" of custom nbt of {_familiar_summon_item} to nbt compound from "{buffs:[{type:'speed',strength:2,duration:9999},{type:'strength',strength:2,duration:9999}]}"
+        set compound list tag "familiarEffects" of custom nbt of {_familiar_summon_item} to nbt compound from "{buffs:[{type:'speed',strength:2,duration:9999},{type:'resistance',strength:1,duration:9999}]}"
         give {_familiar_summon_item} to player
