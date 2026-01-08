@@ -9,7 +9,8 @@ options:
     initial_poison_strength: 1
     initial_untargeted_blink_distance: 5
     initial_targeted_blink_distance: 10
-    initial_blink_cooldown: 10
+    initial_blink_cooldown: 12
+    initial_backstab_cooldown: 1
 
 on load:
     clear {assassinClassItemNames::*}
@@ -27,6 +28,7 @@ function isBackstab(attacker: player, victim: entity) :: boolean:
 
 function upgradeDagger(player: player, i: item) :: item:
     set {_newCooldown} to getNumberTag({_i}, "cooldown") - 1
+    set {_newBackstabCooldown} to getNumberTag({_i}, "backstabCooldown") - 1
     set {_newBackstab} to (getNumberTag({_i}, "backstabMult") + 0.1)
     set {_newLevel} to (getNumberTag({_i}, "level") + 1)
 
@@ -80,6 +82,7 @@ on damage:
         isCorrectClass(attacker, "class.assassin") is true
         isCorrectGear(attacker, attacker's tool, ({@dagger_type}), false) is true
         isBackstab(attacker, victim) is true
+        metadata value "wasBackstabbedRecently" of victim is not set
     then:
         set {_damage} to damage
         set {_backstabMult} to getNumberTag(attacker's tool, "backstabMult")
@@ -89,7 +92,16 @@ on damage:
         set {_poisonDamage} to getNumberTag(attacker's tool, "poisonStrength")
         apply poison {_poisonDamage} to victim for 4 seconds
 
-        send action bar "&cBackstab!" to attacker
+        send action bar "&cBackstab&7! &1Blink &7reset!" to attacker
+        play sound "entity.player.attack.critical" with pitch 1.5 to attacker
+        set boolean tag "isOnCooldown" of custom nbt of attacker's tool to false
+        set metadata value "blinkResetByBackstab" of attacker to true
+
+        set metadata value "wasBackstabbedRecently" of victim to true
+        set {_c} to getTimespanTag(attacker's tool, "backstabCooldown")
+        wait getTimespanTag(attacker's tool, "backstabCooldown")
+        show 20 smoke at victim's head
+        delete metadata value "wasBackstabbedRecently" of victim
 
 on death:
     if:
@@ -133,6 +145,7 @@ on rightclick:
                 set {_distance} to getNumberTag(player's tool, "untargeted_blink_distance")
                 untargeted_blink(player, {_distance})
                 set boolean tag "isOnCooldown" of custom nbt of player's tool to true
+                delete metadata value "blinkResetByBackstab" of player
             else:
                 # Target found
                 set {_distance} to getNumberTag(player's tool, "targeted_blink_distance")
@@ -141,6 +154,7 @@ on rightclick:
                     # Target out of range, untargeted blink
                     untargeted_blink(player, {_distance})
                     set boolean tag "isOnCooldown" of custom nbt of player's tool to true
+                    delete metadata value "blinkResetByBackstab" of player
                 else:
                     # Blink behind target
                     set {_loc} to location 1.5 blocks behind {_target}
@@ -155,12 +169,23 @@ on rightclick:
                     set boolean tag "isOnCooldown" of custom nbt of player's tool to true
 
             if isOnCooldown(player, player's tool) is true:
-                # We blinked, start cooldown timer
+                # Use a per-player blink instance id so older timers cannot clear newer cooldowns
+                if {blink.instance.%player%} is not set:
+                    set {blink.instance.%player%} to 0
+                set {blink.instance.%player%} to ({blink.instance.%player%} + 1)
+                set {_myInstance} to {blink.instance.%player%}
+                set metadata value "blinkInstance" of player to {_myInstance}
+
                 set {_c} to getTimespanTag(player's tool, "cooldown")
-                wait getTimespanTag(player's tool, "cooldown")
-                send action bar "&1Blink &7 is ready!" to player
-                play sound "block.note_block.chime" with pitch 2 to player
-                set boolean tag "isOnCooldown" of custom nbt of player's tool to false
+                wait {_c}
+
+                # Only the timer belonging to the current blink instance may clear the cooldown
+                if metadata value "blinkInstance" of player is {_myInstance}:
+                    if metadata value "blinkResetByBackstab" of player is not set:
+                        # Cooldown can be reset by other functions, so check again
+                        send action bar "&1Blink &7 is ready!" to player
+                        play sound "block.note_block.chime" with pitch 2 to player
+                        set boolean tag "isOnCooldown" of custom nbt of player's tool to false
 
 command /giveassassinItems:
     permission: op
@@ -173,6 +198,7 @@ command /giveassassinItems:
         set double tag "untargeted_blink_distance" of custom nbt of {_dagger} to {@initial_untargeted_blink_distance}
         set double tag "targeted_blink_distance" of custom nbt of {_dagger} to {@initial_targeted_blink_distance}
         set double tag "cooldown" of custom nbt of {_dagger} to {@initial_blink_cooldown}
+        set double tag "backstabCooldown" of custom nbt of {_dagger} to {@initial_backstab_cooldown}
         set double tag "level" of custom nbt of {_dagger} to 0
         set double tag "maxLevel" of custom nbt of {_dagger} to 5
         set double tag "lastMilestone" of custom nbt of {_dagger} to 25
