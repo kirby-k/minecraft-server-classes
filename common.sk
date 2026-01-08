@@ -49,7 +49,10 @@ function isCorrectGear(p: player, usedGear: item, classItems: texts, verbose: bo
 
 function isOnCooldown(p: player, usedGear: item, cooldownTag: text = "isOnCooldown") :: boolean:
     if getBooleanTag({_usedGear}, {_cooldownTag}) is true:
-        send action bar "&7Recharging..." to {_p}
+        if string tag "itemType" of custom nbt of {_usedGear} is "slingshot":
+            send action bar "&7Reloading..." to {_p}
+        else:
+            send action bar "&7Recharging..." to {_p}
         play sound "block.note_block.bass" with pitch 0.5 to {_p}
         return true
     else:
