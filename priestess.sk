@@ -1,24 +1,27 @@
 options:
     soulboundText: "&9Soulbound"
 
-    bow_name: "&f&lPriestess Bow"
+    bow_type: "Priestess Bow"
+    bow_name: "<gradient:#F4C4F3:#FC67FA><bold>Priestess Bow"
     bow_lore: "&7Arrows from this bow &aheal &7allies."
     bow_lore_heal_mult: "0.2x"
     bow_counter: "&cLife Healed"
     initial_heal_mult: 0.2
 
+    ig_summon_item_type: "Summon: Iron Golem"
     ig_summon_item_name: "&5&lSummon: &f&lIron Golem"
     ig_summon_item_lore: "&7Right-click to summon a slow, withering Iron Golem."
     ig_summon_item_counter: "&cTimes Summoned"
     initial_ig_summon_item_cooldown: 100
 
+    familiar_summon_item_type: "Summon: Familiar"
     familiar_summon_item_name: "&5&lSummon: &b&lFamiliar"
     familiar_summon_item_lore: "&7Right-click to summon your familiar to your side!"
     familiar_summon_item_counter: "&cTimes Summoned"
 
 on load:
     clear {priestessClassItemNames::*}
-    set {priestessClassItemNames::*} to {@bow_name}, and {@ig_summon_item_name}, and {@familiar_summon_item_name}
+    set {priestessClassItemNames::*} to {@bow_type}, and {@ig_summon_item_type}, and {@familiar_summon_item_type}
 
 function updateHealedLife(i: item, heal: number) :: item:
     set {_totalHealed} to getNumberTag({_i}, "totalHealed")
@@ -85,7 +88,7 @@ on damage:
         projectile is an arrow
         victim is a living entity
         isCorrectClass(attacker, "class.priestess") is true
-        isCorrectGear(attacker, attacker's tool, ({@bow_name}), false) is true
+        isCorrectGear(attacker, attacker's tool, ({@bow_type}), false) is true
     then:
         if victim is a monster:
             # Deal damage to monsters
@@ -149,7 +152,7 @@ on rightclick:
     then:
         # Iron Golem Summon
         if:
-            isCorrectGear(player, player's tool, ({@ig_summon_item_name}), false) is true
+            isCorrectGear(player, player's tool, ({@ig_summon_item_type}), false) is true
             isOnCooldown(player, player's tool) is false
         then:
             # Player is using one of their class items, cancel the default right click event
@@ -193,7 +196,7 @@ on rightclick:
             set boolean tag "isOnCooldown" of custom nbt of player's tool to false
 
         # Familiar Summon
-        if isCorrectGear(player, player's tool, ({@familiar_summon_item_name}), false) is true:
+        if isCorrectGear(player, player's tool, ({@familiar_summon_item_type}), false) is true:
             # Player is using one of their class items, cancel the default right click event
             cancel event
             if metadata value "isFamiliarAlive" of player is true:
@@ -226,7 +229,9 @@ on rightclick:
 command /givePriestessItems:
     permission: op
     trigger:
-        set {_bow} to createClassItem(bow, {@bow_name}, "%{@bow_lore}% Heal Multiplier: %{@bow_lore_heal_mult}%", {@bow_counter}, 0)
+        set {_name} to mini message from {@bow_name}
+        set {_bow} to createClassItem(bow, {_name}, "%{@bow_lore}% Heal Multiplier: %{@bow_lore_heal_mult}%", {@bow_counter}, 0)
+        set string tag "itemType" of custom nbt of {_bow} to {@bow_type}
         set double tag "healMult" of custom nbt of {_bow} to {@initial_heal_mult}
         set double tag "level" of custom nbt of {_bow} to 0
         set double tag "maxLevel" of custom nbt of {_bow} to 5
@@ -238,6 +243,7 @@ command /givePriestessItems:
         give 1 arrow to player
 
         set {_ig_summon_item} to createClassItem(wither rose, {@ig_summon_item_name}, {@ig_summon_item_lore}, {@ig_summon_item_counter}, {@initial_ig_summon_item_cooldown})
+        set string tag "itemType" of custom nbt of {_ig_summon_item} to {@ig_summon_item_type}
         set string tag "name" of custom nbt of {_ig_summon_item} to "Fernando"
         set double tag "level" of custom nbt of {_ig_summon_item} to 0
         set double tag "cooldown" of custom nbt of {_ig_summon_item} to {@initial_ig_summon_item_cooldown}
@@ -249,6 +255,7 @@ command /givePriestessItems:
 
         set {_id} to random uuid
         set {_familiar_summon_item} to createClassItem(bone, {@familiar_summon_item_name}, {@familiar_summon_item_lore}, {@familiar_summon_item_counter}, 0)
+        set string tag "itemType" of custom nbt of {_familiar_summon_item} to {@familiar_summon_item_type}
         set string tag "name" of custom nbt of {_familiar_summon_item} to "Familiar"
         set double tag "level" of custom nbt of {_familiar_summon_item} to 0
         set boolean tag "isOnCooldown" of custom nbt of {_familiar_summon_item} to false

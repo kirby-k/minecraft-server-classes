@@ -18,12 +18,6 @@ function getIDFromLore() :: text:
     set {_lore} to line 5 of lore of {_i}
     return last element of ({_lore} split at "ID: ")
 
-function getCooldownFromLore(i: item) :: timespan:
-    set {_rawLore} to line 2 of lore of {_i}
-    set {_rawLore} to last element of ({_rawLore} split at ": ")
-    set {_cooldown} to {_rawLore} parsed as a timespan
-    return {_cooldown}
-
 function isSoulbound(i: item) :: boolean:
     set {_lore::*} to lore of {_i}
     loop {_lore::*}:
@@ -45,11 +39,12 @@ function isCorrectClass(p: player, class: text) :: boolean:
         return false
 
 function isCorrectGear(p: player, usedGear: item, classItems: texts, verbose: boolean = true) :: boolean:
+    set {_item_type} to string tag "itemType" of custom nbt of {_usedGear}
     loop {_classItems::*}:
-        if name of {_usedGear} is loop-value:
+        if {_item_type} is loop-value:
             return true
     if {_verbose} is true:
-        send "&7You've only been trained to use %{_classItems::*}%!" to {_p}
+        send "&7You've only been trained to use &5%{_classItems::*}%!" to {_p}
     return false
 
 function isOnCooldown(p: player, usedGear: item) :: boolean:
@@ -69,25 +64,12 @@ function createClassItem(i: item, itemName: text, loreText: text, counter: text,
     set line 5 of lore of {_classItem} to "&8ID: %{_id}%"
     return {_classItem}
 
-function getKillsFromLore(i: item) :: integer:
-    set {_rawLore} to line 3 of lore of {_i}
-    set {_rawLore} to last element of ({_rawLore} split at ": ")
-    set {_kills} to {_rawLore} parsed as an integer
-    return {_kills}
-
 function updateKills(i: item) :: item:
     set {_kills} to getNumberTag({_i}, "kills")
     # set {_newKills} to ({_kills} + 1)
-    set {_newKills} to ({_kills} + 25)
+    set {_newKills} to ({_kills} + 250)
     set double tag "kills" of custom nbt of {_i} to {_newKills}
     set line 3 of lore of {_i} to "&cKills: %{_newKills}%"
-    return {_i}
-
-function updateKillCountLore(i: item) :: item:
-    set {_rawLore} to line 3 of lore of {_i}
-    set {_kills} to getKillsFromLore({_i})
-    add 25 to {_kills}
-    set line 3 of lore of {_i} to "&cKills: %{_kills}%"
     return {_i}
 
 function addEnchants(p: player, i: item, enchants: enchantment types) :: item:
@@ -96,25 +78,36 @@ function addEnchants(p: player, i: item, enchants: enchantment types) :: item:
         enchant {_i} with loop-value
     return {_i}
 
-function applyEffects(t: entity, effects: object):
-    # Takes in effects, which must have the debuffs or buffs key at the top level
-    loop compound list tag "debuffs" of {_effects}:
-        set {_type} to string tag "type" of loop-value
-        set {_type} to {_type} parsed as potion effect type
-        set {_str} to int tag "strength" of loop-value
-        set {_dur} to int tag "duration" of loop-value
-        set {_dur} to "%{_dur}% seconds" parsed as timespan
-        # send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_t}%" to all players
-        apply {_type} {_str} to {_t} for {_dur}
-
+function applyBuffs(t: entity, effects: object):
+    # Takes in effects, which must have the buffs key at the top level
     loop compound list tag "buffs" of {_effects}:
         set {_type} to string tag "type" of loop-value
         set {_type} to {_type} parsed as potion effect type
         set {_str} to int tag "strength" of loop-value
         set {_dur} to int tag "duration" of loop-value
         set {_dur} to "%{_dur}% seconds" parsed as timespan
-        # send "debug: applying this - %{_type}% of tier %{_str}% for %{_dur}% to %{_t}%" to all players
         apply {_type} {_str} to {_t} for {_dur}
+
+function applyDebuffs(t: entity, effects: object):
+    # Takes in effects, which must have the debuffs key at the top level
+    loop compound list tag "debuffs" of {_effects}:
+        set {_type} to string tag "type" of loop-value
+        set {_type} to {_type} parsed as potion effect type
+        set {_str} to int tag "strength" of loop-value
+        set {_dur} to int tag "duration" of loop-value
+        set {_dur} to "%{_dur}% seconds" parsed as timespan
+        apply {_type} {_str} to {_t} for {_dur}
+
+function applyEffects(t: entity, effects: object, type: text = ""):
+    # Applies buffs and/or debuffs based on type parameter
+    switch {_type}:
+        case "buffs":
+            applyBuffs({_t}, {_effects})
+        case "debuffs":
+            applyDebuffs({_t}, {_effects})
+        default:
+            applyBuffs({_t}, {_effects})
+            applyDebuffs({_t}, {_effects})
 
 # Prevent Enchanting Table use
 on enchant prepare:
