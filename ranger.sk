@@ -8,9 +8,9 @@ options:
     slingshot_name_firework: "<gradient:#ffb28b:#ffb28b:#ff5b5b:#ff0000><bold>Slingshot Ammo: Firework"
     slingshot_lore: "&7Right-click to shoot, left-click to change ammo type."
     initial_arrow_cooldown: 1.5
-    initial_snowball_cooldown: 1
+    initial_snowball_cooldown: 2.5
     initial_firecharge_cooldown: 6
-    initial_firework_cooldown: 2.5
+    initial_firework_cooldown: 2
     firework_range: 30
 
 on load:
@@ -42,11 +42,11 @@ function upgradeSlingshot(player: player, i: item) :: item:
         send "Your Slingshot looks like it could shoot &5Fireworks &7now..." to {_player}
         set string list tag "availableAmmo" of custom nbt of {_i} to "arrow", and "snowball", and "firecharge", and "firework"
         set double tag "snowballCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "snowballCooldown") - 0.5)
-        set double tag "firechargeCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "firechargeCooldown") - 0.5)
+        set double tag "firechargeCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "firechargeCooldown") - 1)
     if {_newLevel} is 5:    
         set double tag "snowballCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "snowballCooldown") - 0.5)
-        set double tag "firechargeCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "firechargeCooldown") - 0.5)
-        set double tag "fireworkCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "fireworkCooldown") - 0.5)
+        set double tag "firechargeCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "firechargeCooldown") - 1)
+        set double tag "fireworkCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "fireworkCooldown") - 1)
     return {_i}
 
 on projectile hit:
@@ -216,12 +216,12 @@ command /giverangerItems:
         set double tag "lastMilestone" of custom nbt of {_slingshot} to 25
         give {_slingshot} to player
 
-command /clearmetadata:
-    permission: op
+command /clearrangermetadata:
+    permission: class.ranger
     trigger:
+        delete metadata value "is%{_ammoType}%OnCooldown" of player
         delete metadata value "isarrowOnCooldown" of player
         delete metadata value "issnowballOnCooldown" of player
         delete metadata value "isfirechargeOnCooldown" of player
         delete metadata value "isfireworkOnCooldown" of player
-        delete metadata value "isnoneOnCooldown" of player
         send "Cleared metadata." to player
