@@ -6,7 +6,7 @@ options:
     dagger_lore: "&7Right-click to &1blink &7forward, or to your target."
     dagger_lore_backstab_mult: "1.5x"
     initial_backstab_mult: 1.5
-    initial_poison_strength: 1
+    initial_wither_strength: 1
     initial_untargeted_blink_distance: 5
     initial_targeted_blink_distance: 10
     initial_blink_cooldown: 12
@@ -44,12 +44,12 @@ function upgradeDagger(player: player, i: item) :: item:
     if {_newLevel} is 2:
         enchant {_i} with looting 1
     if {_newLevel} is 3:
-        set double tag "poisonStrength" of custom nbt of {_i} to (getNumberTag({_i}, "poisonStrength") + 1)
+        set double tag "witherStrength" of custom nbt of {_i} to (getNumberTag({_i}, "witherStrength") + 1)
         enchant {_i} with sharpness 1
     if {_newLevel} is 4:    
         enchant {_i} with sharpness 2
     if {_newLevel} is 5:    
-        set double tag "poisonStrength" of custom nbt of {_i} to (getNumberTag({_i}, "poisonStrength") + 1)
+        set double tag "witherStrength" of custom nbt of {_i} to (getNumberTag({_i}, "witherStrength") + 1)
         enchant {_i} with sharpness 3
         enchant {_i} with looting 2
     return {_i}
@@ -89,8 +89,8 @@ on damage:
         set {_finalDamage} to ({_damage} * {_backstabMult})
         set damage to {_finalDamage}
 
-        set {_poisonDamage} to getNumberTag(attacker's tool, "poisonStrength")
-        apply poison {_poisonDamage} to victim for 4 seconds
+        set {_witherDamage} to getNumberTag(attacker's tool, "witherStrength")
+        apply wither {_witherDamage} to victim for 4 seconds
 
         send action bar "&cBackstab&7! &1Blink &7reset!" to attacker
         play sound "entity.player.attack.critical" with pitch 1.5 to attacker
@@ -194,7 +194,7 @@ command /giveassassinItems:
         set {_dagger} to createClassItem(iron sword, {_name}, "%{@dagger_lore}% &cBackstab &7Multiplier: %{@dagger_lore_backstab_mult}%", "&cKills", {@initial_blink_cooldown})
         set string tag "itemType" of custom nbt of {_dagger} to {@dagger_type}
         set double tag "backstabMult" of custom nbt of {_dagger} to {@initial_backstab_mult}
-        set double tag "poisonStrength" of custom nbt of {_dagger} to {@initial_poison_strength}
+        set double tag "witherStrength" of custom nbt of {_dagger} to {@initial_wither_strength}
         set double tag "untargeted_blink_distance" of custom nbt of {_dagger} to {@initial_untargeted_blink_distance}
         set double tag "targeted_blink_distance" of custom nbt of {_dagger} to {@initial_targeted_blink_distance}
         set double tag "cooldown" of custom nbt of {_dagger} to {@initial_blink_cooldown}
