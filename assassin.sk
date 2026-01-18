@@ -21,7 +21,7 @@ function isBackstab(attacker: player, victim: entity) :: boolean:
     set {_attackerYaw} to (yaw of {_attacker} - 180)
     set {_victimYaw} to (yaw of {_victim} - 180)
     set {_angleDiff} to abs(({_attackerYaw} - {_victimYaw}))
-    if {_angleDiff} < 30:
+    if {_angleDiff} < 50:
         return true
     else:
         return false
@@ -73,6 +73,7 @@ function untargeted_blink(player: player, distance: number):
     if {_final_loc} is set:
         play sound "entity.enderman.teleport" with pitch 1 to {_player}
         teleport {_player} to {_final_loc}
+        apply invisibility 1 to {_player} for 2 seconds
     else:
         send "No safe location to blink!" to {_player}
 
@@ -202,7 +203,7 @@ command /giveassassinItems:
         set double tag "level" of custom nbt of {_dagger} to 0
         set double tag "maxLevel" of custom nbt of {_dagger} to 5
         set double tag "lastMilestone" of custom nbt of {_dagger} to 25
-        set compound list tag "blinkEffects" of custom nbt of {_dagger} to nbt compound from "{debuffs:[{type:'blindness',strength:1,duration:1}],buffs:[{type:'speed',strength:2,duration:1},{type:'resistance',strength:10,duration:1}]}"
+        set compound list tag "blinkEffects" of custom nbt of {_dagger} to nbt compound from "{debuffs:[{type:'blindness',strength:1,duration:1}],buffs:[{type:'invisibility',strength:1,duration:2},{type:'speed',strength:2,duration:1},{type:'resistance',strength:10,duration:1}]}"
         give {_dagger} to player
 
 command /yaw:

@@ -17,6 +17,7 @@ function upgradeAxe(p: player, i: item, newType: item, cooldown: number) :: item
 
     set {_newAxe} to unbreakable {_newType} named name of {_i}
     set lore of {_newAxe} to {_oldLore::*}
+    set string tag "itemType" of custom nbt of {_newAxe} to {@axeItem_type}
     set double tag "kills" of custom nbt of {_newAxe} to getNumberTag({_i}, "kills")
     set double tag "cooldown" of custom nbt of {_newAxe} to {_cooldown}
     set boolean tag "isOnCooldown" of custom nbt of {_newAxe} to false
@@ -24,7 +25,7 @@ function upgradeAxe(p: player, i: item, newType: item, cooldown: number) :: item
     return {_newAxe}
 
 on tool change:
-    if uncolored name of new tool is {@axeItem_type}:
+    if name of new tool is {@axeItem_type}:
         apply slowness 1 to player for 10 day
     else:
         remove slowness from player

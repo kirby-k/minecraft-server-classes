@@ -1,0 +1,18 @@
+on load:
+    clear {dungeon::spawns::enemies::*}
+    # set {dungeon::spawns::enemies::room1} to location(-1878, 258, 2356, world)
+
+    create a new bound with id "room1" between location(-1871, 268, 2348, world) and location(-1883, 258, 2363, world)
+    set {dungeon::areas::room1} to bound of id "room1"
+    set {dungeon::areas::room1::initial_spawn} to false
+
+on bound enter with id "room1":
+    if {dungeon::areas::room1::initial_spawn} is false:
+        set {dungeon::areas::room1::initial_spawn} to true
+        # spawn 3 zombies at {dungeon::spawns::enemies::room1}
+        # spawn 2 skeletons at {dungeon::spawns::enemies::room1}
+        send "Debug: Enemies have spawned in Room 1!" to all players
+        wait 1 day
+        send "Debug: Enemies have refreshed in Room 1!" to all players
+        set {dungeon::areas::room1::initial_spawn} to false
+    
