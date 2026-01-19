@@ -11,7 +11,7 @@
             # set velocity of player to {_v}
             
             # play sound "entity.bat.takeoff" with pitch 0.5 to player
-            # show 20 cloud at player's location
+            # draw 20 cloud at player's location
             
             # setCooldown(player, player's tool)
             # send "no fall damage" to player

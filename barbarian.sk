@@ -115,7 +115,7 @@ on damage:
         play sound "entity.ravager.roar" with volume 0.5 and pitch 1.5 to attacker
         set {_eye} to eye location of attacker
         set {_target} to location 1 block in front of {_eye}
-        show 20 angry villager at {_target}
+        draw 20 angry villager particles at {_target}
 
         set {_debug} to getTimespanTag(attacker's tool, "cooldown")
         send "debug: waiting for %{_debug}%" to all players

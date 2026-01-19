@@ -104,7 +104,7 @@ on damage:
         set metadata value "wasBackstabbedRecently" of victim to true
         set {_c} to getTimespanTag(attacker's tool, "backstabCooldown")
         wait getTimespanTag(attacker's tool, "backstabCooldown")
-        show 20 smoke at victim's head
+        draw 20 smoke particles at victim's head
         delete metadata value "wasBackstabbedRecently" of victim
 
 on death:
