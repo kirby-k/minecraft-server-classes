@@ -187,11 +187,11 @@ on rightclick:
                     # Pretty effects to show drain
                     set {_targetHead} to eye location of {_target}
                     loop 10 times:
-                        draw 1 smoke at {_targetHead}
+                        draw 1 smoke particles at {_targetHead}
 
                     set {_eye} to eye location of player
                     set {_playerEye} to location 1 block in front of {_eye}
-                    show 1 heart at {_playerEye}
+                    draw 1 heart particles at {_playerEye}
 
             # Allow player to try and drain again
             delete metadata value "draining" of player
@@ -202,7 +202,7 @@ on explode:
         if shooter is a player:
             cancel event 
             create a safe explosion of force 0 at event-location
-            show 30 smoke at event-location
+            draw 30 smoke particles with extra value 0.05 at event-location
 
 command /givewands:
     permission: op

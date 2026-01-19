@@ -112,7 +112,7 @@ on damage:
             
             send action bar "&a%attacker% healed you!" to victim
             play sound "entity.experience_orb.pickup" with volume 1 and pitch 2 to victim
-            show 15 heart at victim's head
+            draw 15 heart particles at victim's head
             
             # Cleanup the arrow so it doesn't stick in the person
             delete projectile

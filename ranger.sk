@@ -11,7 +11,7 @@ options:
     initial_snowball_cooldown: 2.5
     initial_firecharge_cooldown: 6
     initial_laser_cooldown: 6
-    laser_range: 50
+    laser_range: 300
 
 on load:
     clear {rangerClassItemNames::*}
@@ -53,51 +53,51 @@ every tick:
     loop all snowballs:
         set {_snowball} to loop-entity
         if metadata value "projectileType" of {_snowball} is "stone":
-            show 10 ash at location of {_snowball}
+            draw 10 ash particles with offset vector(0.01,0,0.01) at location of {_snowball}
 
 on projectile hit:
-    if:
-        metadata value "projectileOwner" of projectile exists
-        victim is a living entity
-    then:
-        set {_owner} to metadata value "projectileOwner" of projectile
-        set metadata value "rangerLastDamager" of victim to {_owner}
+    if victim is a living entity:
+        if metadata value "projectileOwner" of projectile exists:
+            set {_owner} to metadata value "projectileOwner" of projectile
+            set metadata value "rangerLastDamager" of victim to {_owner}
 
-        if projectile is a snowball:
-            if metadata value "projectileType" of projectile is "stone":
-                # Stone projectile
-                damage victim by 2
-                apply knockback to victim in direction of projectile with force 1
-            else:
-                # Snowball projectile
-                damage victim by 1
-                apply a potion effect of slowness of tier 2 to victim for 4 seconds
-        if projectile is a fireball:
-            ignite victim for 4 seconds
+            if projectile is a snowball:
+                if metadata value "projectileType" of projectile is "stone":
+                    # Stone projectile
+                    damage victim by 2
+                    apply knockback to victim in direction of projectile with force 1
+                else:
+                    # Snowball projectile
+                    damage victim by 1
+                    apply a potion effect of slowness of tier 2 to victim for 4 seconds
 
-        # Damage takes a bit to register
-        wait 1 ticks
-        set {_attacker} to metadata value "projectileOwner" of projectile
-        if health of victim is 0:
-            if:
-                {_attacker} is a player
-                isCorrectClass({_attacker}, "class.ranger") is true
-                isCorrectGear({_attacker}, {_attacker}'s tool, ({@slingshot_type}), false) is true
-            then:
-                # Update stats
-                set {_attacker}'s tool to updateKills({_attacker}'s tool)
-                
-                # Determine if slingshot needs to be upgraded
-                set {_totalKills} to getNumberTag({_attacker}'s tool, "kills")
-                set {_lastMilestone} to getNumberTag({_attacker}'s tool, "lastMilestone")
-                
-                # slingshot upgrades once 3 times the previous milestone is reached
+            if projectile is a small fireball:
+                draw 1 orange flash particle at event-location
+
+            # Damage is done, check if enemy has died (on death event happens before on projectile hit)
+            # Wait for damage to register
+            wait 1 ticks
+            set {_attacker} to metadata value "projectileOwner" of projectile
+            if health of victim is 0:
                 if:
-                    getNumberTag({_attacker}'s tool, "level") < 5
-                    {_totalKills} >= ({_lastMilestone} * 3)
+                    {_attacker} is a player
+                    isCorrectClass({_attacker}, "class.ranger") is true
+                    isCorrectGear({_attacker}, {_attacker}'s tool, ({@slingshot_type}), false) is true
                 then:
-                    set {_attacker}'s tool to upgradeSlingshot({_attacker}, {_attacker}'s tool)
-                    set double tag "lastMilestone" of custom nbt of {_attacker}'s tool to ({_lastMilestone} * 3)
+                    # Update stats
+                    set {_attacker}'s tool to updateKills({_attacker}'s tool)
+                    
+                    # Determine if slingshot needs to be upgraded
+                    set {_totalKills} to getNumberTag({_attacker}'s tool, "kills")
+                    set {_lastMilestone} to getNumberTag({_attacker}'s tool, "lastMilestone")
+                    
+                    # slingshot upgrades once 3 times the previous milestone is reached
+                    if:
+                        getNumberTag({_attacker}'s tool, "level") < 5
+                        {_totalKills} >= ({_lastMilestone} * 3)
+                    then:
+                        set {_attacker}'s tool to upgradeSlingshot({_attacker}, {_attacker}'s tool)
+                        set double tag "lastMilestone" of custom nbt of {_attacker}'s tool to ({_lastMilestone} * 3)
 
 on death:
     if:
@@ -194,7 +194,7 @@ on rightclick:
                     set yaw of {_stone} to yaw of player
                     set pitch of {_stone} to pitch of player
                     set {_v} to vector in direction of player
-                    set velocity of {_stone} to {_v}
+                    set velocity of {_stone} to {_v} * 1.1
                     set metadata value "projectileOwner" of {_stone} to player
                     set metadata value "projectileType" of {_stone} to "stone"
                     play sound "entity.snowball.throw" with volume 1 and pitch 0.5 to player
@@ -208,37 +208,30 @@ on rightclick:
                     play sound "entity.snowball.throw" with volume 1 and pitch 1.2 to player
 
                 case "firecharge":
-                    spawn a fireball at {_projectileSpawn}
+                    spawn a small fireball at {_projectileSpawn}
                     set {_firecharge} to last spawned entity
                     set {_v} to vector in direction of player
-                    set velocity of {_firecharge} to {_v} * 0.8
+                    set velocity of {_firecharge} to {_v} * 0.5
                     set metadata value "projectileOwner" of {_firecharge} to player
                     play sound "entity.blaze.shoot" with volume 1 and pitch 1 to player
 
                 case "laser":
                     set {_laserLocation} to {_projectileSpawn}
                     set {_v} to vector in direction of player
-                    set y-coordinate of {_v} to 0
+                    # set y-coordinate of {_v} to 0
                     
                     loop {@laser_range} times:
-                        set {_laserLocation} to {_laserLocation} ~ {_v}
+                        # Move the laser forward
+                        set {_laserLocation} to {_laserLocation} ~ ({_v} * 0.5)
                         
                         # Create laser beam effect
-                        set {_particle} to wax off
-                        show 1 {_particle} at {_laserLocation}
-                        set {_particleLoc} to location 0.1 blocks above {_laserLocation}
-                        show 1 {_particle} at {_particleLoc}
-                        set {_particleLoc} to location 0.1 blocks below {_laserLocation}
-                        show 1 {_particle} at {_particleLoc}
-                        set {_particleLoc} to location 0.1 blocks left of {_laserLocation}
-                        show 1 {_particle} at {_particleLoc}
-                        set {_particleLoc} to location 0.1 blocks right of {_laserLocation}
-                        show 1 {_particle} at {_particleLoc}
-                        
+                        set {_particle} to 1 wax off particle
+                        draw {_particle} with offset vector(0.05,0.05,0.05) at {_laserLocation}
+
                         # Check for collision
                         if block at {_laserLocation} is solid:
-                            # create a safe explosion of force 2 at {_laserLocation}
-                            show 50 smoke at {_laserLocation}
+                            draw 25 smoke particles with extra value 0.06 at {_laserLocation}
+                            draw 25 flame particles with extra value 0.06 at {_laserLocation}
                             stop loop
                         
                         # Check for entity hit (compare beam position to entity eye position)
@@ -251,6 +244,8 @@ on rightclick:
                                 if distance between {_laserLocation} and location of loop-entity <= 0.75:
                                     set {_hit} to true
                                 if {_hit} is true:
+                                    draw 25 smoke particles with extra value 0.06 at {_laserLocation}
+                                    draw 25 flame particles with extra value 0.06 at {_laserLocation}
                                     make player damage loop-entity by 5
                                     apply a potion effect of levitation of tier 2 to loop-entity for 2 seconds
                                     apply a potion effect of glowing of tier 1 to loop-entity for 2 seconds
