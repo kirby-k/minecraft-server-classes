@@ -71,7 +71,7 @@ on projectile hit:
             else:
                 # Snowball projectile
                 damage victim by 1
-                apply slowness 2 to victim for 4 seconds
+                apply a potion effect of slowness of tier 2 to victim for 4 seconds
         if projectile is a fireball:
             ignite victim for 4 seconds
 
@@ -252,8 +252,8 @@ on rightclick:
                                     set {_hit} to true
                                 if {_hit} is true:
                                     make player damage loop-entity by 5
-                                    apply levitation 2 to loop-entity for 2 seconds
-                                    apply glowing to loop-entity for 2 seconds
+                                    apply a potion effect of levitation of tier 2 to loop-entity for 2 seconds
+                                    apply a potion effect of glowing of tier 1 to loop-entity for 2 seconds
                                     stop loop
 
                         # Check range

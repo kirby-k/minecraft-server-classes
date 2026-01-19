@@ -89,7 +89,7 @@ function applyBuffs(t: entity, effects: object):
         set {_str} to int tag "strength" of loop-value
         set {_dur} to int tag "duration" of loop-value
         set {_dur} to "%{_dur}% seconds" parsed as timespan
-        apply {_type} {_str} to {_t} for {_dur}
+        apply a potion effect of {_type} of tier {_str} to {_t} for {_dur}
 
 function applyDebuffs(t: entity, effects: object):
     # Takes in effects, which must have the debuffs key at the top level
@@ -99,7 +99,7 @@ function applyDebuffs(t: entity, effects: object):
         set {_str} to int tag "strength" of loop-value
         set {_dur} to int tag "duration" of loop-value
         set {_dur} to "%{_dur}% seconds" parsed as timespan
-        apply {_type} {_str} to {_t} for {_dur}
+        apply a potion effect of {_type} of tier {_str} to {_t} for {_dur}
 
 function applyEffects(t: entity, effects: object, type: text = ""):
     # Applies buffs and/or debuffs based on type parameter

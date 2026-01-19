@@ -181,26 +181,13 @@ on rightclick:
                     
                     # Secondary effects
                     set {_effects} to compound tag "secondaryEffects[0]" of custom nbt of player's tool
-                    loop compound list tag "debuffs" of {_effects}:
-                        set {_type} to string tag "type" of loop-value
-                        set {_type} to {_type} parsed as potion effect type
-                        set {_str} to int tag "strength" of loop-value
-                        set {_dur} to int tag "duration" of loop-value
-                        set {_dur} to "%{_dur}% seconds" parsed as timespan
-                        apply {_type} {_str} to {_target} for {_dur}
-
-                    loop compound list tag "buffs" of {_effects}:
-                        set {_type} to string tag "type" of loop-value
-                        set {_type} to {_type} parsed as potion effect type
-                        set {_str} to int tag "strength" of loop-value
-                        set {_dur} to int tag "duration" of loop-value
-                        set {_dur} to "%{_dur}% seconds" parsed as timespan
-                        apply {_type} {_str} to player for {_dur}
+                    applyEffects(player, {_effects}, "buffs")
+                    applyEffects({_target}, {_effects}, "debuffs")
 
                     # Pretty effects to show drain
                     set {_targetHead} to eye location of {_target}
                     loop 10 times:
-                        show 1 smoke at {_targetHead}
+                        draw 1 smoke at {_targetHead}
 
                     set {_eye} to eye location of player
                     set {_playerEye} to location 1 block in front of {_eye}

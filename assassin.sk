@@ -73,7 +73,10 @@ function untargeted_blink(player: player, distance: number):
     if {_final_loc} is set:
         play sound "entity.enderman.teleport" with pitch 1 to {_player}
         teleport {_player} to {_final_loc}
-        apply invisibility 1 to {_player} for 2 seconds
+        apply a potion effect of invisibility of tier 1 to {_player} for 2 seconds:
+            hide the particles
+            hide the icon
+
     else:
         send "No safe location to blink!" to {_player}
 
@@ -91,7 +94,7 @@ on damage:
         set damage to {_finalDamage}
 
         set {_witherDamage} to getNumberTag(attacker's tool, "witherStrength")
-        apply wither {_witherDamage} to victim for 4 seconds
+        apply a potion effect of wither of tier {_witherDamage} to victim for 4 seconds
 
         send action bar "&cBackstab&7! &1Blink &7reset!" to attacker
         play sound "entity.player.attack.critical" with pitch 1.5 to attacker
