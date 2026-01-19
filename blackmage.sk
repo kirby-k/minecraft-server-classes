@@ -1,27 +1,29 @@
 options:
     soulboundText: "&9Soulbound"
 
-    wither_wand_name: "&8&lWither Wand"
+    wither_wand_type: "Wither Wand"
+    wither_wand_name: "<gradient:#000000:#131313:#3c3c3c:#212121:#000000><bold>Wither Wand"
     wither_wand_lore: "&7Right-click to shoot a Wither head!"
-    initial_wither_wand_cooldown: 1
+    initial_wither_wand_cooldown: 1.5
     initial_wither_wand_heads: 1
     initial_wither_wand_speed: 1
 
-    drain_wand_name: "&a&lDrain Wand"
+    drain_wand_type: "Drain Wand"
+    drain_wand_name: "<gradient:#4a0000:#8b0000:#ff0000:#ff0000:#8b0000:#4a0000><bold>Drain Wand"
     drain_wand_lore: "&7Hold Sneak, then Right-click to drain 1 HP from living targets!"
     drain_wand_counter: "&cLife Drained"
     initial_drain_wand_damage: 1
     initial_drain_wand_cooldown: 1.5
-    initial_drain_wand_range: 3
+    initial_drain_wand_range: 2
 
 on load:
     clear {blackMageClassItemNames::*}
-    set {blackMageClassItemNames::*} to {@wither_wand_name}, and {@drain_wand_name}
+    set {blackMageClassItemNames::*} to {@wither_wand_type}, and {@drain_wand_type}
 
 function updateDrainedLife(i: item, drained: number) :: item:
     set {_drainedLife} to getNumberTag({_i}, "totalDrained")
-    set {_totalDrained} to ({_drained} + {_drainedLife})
-    # set {_totalDrained} to (100 + {_drainedLife})
+    # set {_totalDrained} to ({_drained} + {_drainedLife})
+    set {_totalDrained} to (1500 + {_drainedLife})
     set double tag "totalDrained" of custom nbt of {_i} to {_totalDrained}
     set line 3 of lore of {_i} to "%{@drain_wand_counter}%: %{_totalDrained}%"
     return {_i}
@@ -83,7 +85,7 @@ function isDrainTargetValid(player: player, tool: item, target: entity) :: boole
     else if {_player} is not sneaking:
         send action bar "&7You must be sneaking!" to {_player}
         return false
-    else if isCorrectGear({_player}, {_tool}, ({@drain_wand_name}), false) is false:
+    else if isCorrectGear({_player}, {_tool}, ({@drain_wand_type}), false) is false:
         send action bar "&7You are no longer holding the Drain Wand!" to {_player}
         return false
     else:
@@ -94,7 +96,7 @@ on damage:
     if:
         attacker is a player
         isCorrectClass(attacker, "class.blackmage") is true
-        isCorrectGear(attacker, attacker's tool, ({@drain_wand_name}), false) is true
+        isCorrectGear(attacker, attacker's tool, ({@drain_wand_type}), false) is true
     then:
         # Update total damage dealt on wand
         set attacker's tool to updateDrainedLife(attacker's tool, getNumberTag(attacker's tool, "damage"))
@@ -115,7 +117,7 @@ on death:
     if:
         attacker is a player
         isCorrectClass(attacker, "class.blackmage") is true
-        isCorrectGear(attacker, attacker's tool, ({@wither_wand_name}), false) is true
+        isCorrectGear(attacker, attacker's tool, ({@wither_wand_type}), false) is true
     then:
         # Update total kills on wand
         set attacker's tool to updateKills(attacker's tool)
@@ -135,7 +137,6 @@ on death:
 on rightclick:
     if:
         isCorrectClass(player, "class.blackmage") is true
-        # Needed here to tell the user the full list of items their class can use
         isCorrectGear(player, player's tool, {blackMageClassItemNames::*}, false) is true
     then:
         # Player is using one of their class items, cancel the default right click event
@@ -143,10 +144,9 @@ on rightclick:
 
         # Wither Wand Right Click
         if:
-            isCorrectGear(player, player's tool, ({@wither_wand_name}), false) is true
+            isCorrectGear(player, player's tool, ({@wither_wand_type}), false) is true
             isOnCooldown(player, player's tool) is false
         then:
-            cancel event
             set boolean tag "isOnCooldown" of custom nbt of player's tool to true
             loop getNumberTag(player's tool, "numberOfHeads") times:
                 make player shoot a wither skull at speed getNumberTag(player's tool, "skullSpeed")
@@ -157,12 +157,12 @@ on rightclick:
 
         # Drain Wand Right Click
         if:
-            isCorrectGear(player, player's tool, ({@drain_wand_name}), false) is true
-            # Make sure we only allow the player to drain once at a time
+            isCorrectGear(player, player's tool, ({@drain_wand_type}), false) is true
             player is sneaking
         then:
             if metadata value "draining" of player is true:
                 stop
+
             # Player is attempting to drain, don't let them start a new drain process until this one finishes
             set metadata value "draining" of player to true
 
@@ -181,26 +181,13 @@ on rightclick:
                     
                     # Secondary effects
                     set {_effects} to compound tag "secondaryEffects[0]" of custom nbt of player's tool
-                    loop compound list tag "debuffs" of {_effects}:
-                        set {_type} to string tag "type" of loop-value
-                        set {_type} to {_type} parsed as potion effect type
-                        set {_str} to int tag "strength" of loop-value
-                        set {_dur} to int tag "duration" of loop-value
-                        set {_dur} to "%{_dur}% seconds" parsed as timespan
-                        apply {_type} {_str} to {_target} for {_dur}
-
-                    loop compound list tag "buffs" of {_effects}:
-                        set {_type} to string tag "type" of loop-value
-                        set {_type} to {_type} parsed as potion effect type
-                        set {_str} to int tag "strength" of loop-value
-                        set {_dur} to int tag "duration" of loop-value
-                        set {_dur} to "%{_dur}% seconds" parsed as timespan
-                        apply {_type} {_str} to player for {_dur}
+                    applyEffects(player, {_effects}, "buffs")
+                    applyEffects({_target}, {_effects}, "debuffs")
 
                     # Pretty effects to show drain
                     set {_targetHead} to eye location of {_target}
                     loop 10 times:
-                        show 1 smoke at {_targetHead}
+                        draw 1 smoke at {_targetHead}
 
                     set {_eye} to eye location of player
                     set {_playerEye} to location 1 block in front of {_eye}
@@ -218,9 +205,11 @@ on explode:
             show 30 smoke at event-location
 
 command /givewands:
-    permission: class.blackmage
+    permission: op
     trigger:
-        set {_wither_wand} to createClassItem(black candle, {@wither_wand_name}, {@wither_wand_lore}, "&cKills", {@initial_wither_wand_cooldown})
+        set {_name} to mini message from {@wither_wand_name}
+        set {_wither_wand} to createClassItem(black candle, {_name}, {@wither_wand_lore}, "&cKills", {@initial_wither_wand_cooldown})
+        set string tag "itemType" of custom nbt of {_wither_wand} to {@wither_wand_type}
         set double tag "numberOfHeads" of custom nbt of {_wither_wand} to {@initial_wither_wand_heads}
         set double tag "skullSpeed" of custom nbt of {_wither_wand} to {@initial_wither_wand_speed}
         set double tag "cooldown" of custom nbt of {_wither_wand} to {@initial_wither_wand_cooldown}
@@ -231,7 +220,9 @@ command /givewands:
         set double tag "lastMilestone" of custom nbt of {_wither_wand} to 25
         give {_wither_wand} to player
 
-        set {_drain_wand} to createClassItem(brush, {@drain_wand_name}, {@drain_wand_lore}, {@drain_wand_counter}, {@initial_drain_wand_cooldown})
+        set {_name} to mini message from {@drain_wand_name}
+        set {_drain_wand} to createClassItem(open eyeblossom, {_name}, {@drain_wand_lore}, {@drain_wand_counter}, {@initial_drain_wand_cooldown})
+        set string tag "itemType" of custom nbt of {_drain_wand} to {@drain_wand_type}
         set double tag "damage" of custom nbt of {_drain_wand} to 1
         set double tag "range" of custom nbt of {_drain_wand} to {@initial_drain_wand_range}
         set double tag "cooldown" of custom nbt of {_drain_wand} to {@initial_drain_wand_cooldown}

@@ -1,0 +1,297 @@
+options:
+    soulboundText: "&9Soulbound"
+
+    slingshot_type: "Slingshot"
+    slingshot_name_stone: "<gradient:#ffb28b:#ffb28b:#ff5b5b:#ff0000><bold>Slingshot Ammo: Stone"
+    slingshot_name_snowball: "<gradient:#ffb28b:#ffb28b:#5be1ff:#00bfff><bold>Slingshot Ammo: Snowball"
+    slingshot_name_firecharge: "<gradient:#ff9b5b:#ffb28b:#ffb28b:#ff5b5b><bold>Slingshot Ammo: Fireball"
+    slingshot_name_laser: "<gradient:#ffb28b:#ffb28b:#ff5b5b:#ff0000><bold>Slingshot Ammo: Laser"
+    slingshot_lore: "&7Right-click to shoot, left-click to change ammo type."
+    initial_stone_cooldown: 1.5
+    initial_snowball_cooldown: 2.5
+    initial_firecharge_cooldown: 6
+    initial_laser_cooldown: 6
+    laser_range: 50
+
+on load:
+    clear {rangerClassItemNames::*}
+    set {rangerClassItemNames::*} to {@slingshot_type}
+
+function upgradeSlingshot(player: player, i: item) :: item:
+    set {_newLevel} to (getNumberTag({_i}, "level") + 1)
+
+    send "You feel your dexterity increase as you become more familiar with your Slingshot! - &5Level %{_newLevel}%" to {_player}
+
+    set double tag "level" of custom nbt of {_i} to {_newLevel}
+    set double tag "stoneCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "stoneCooldown") - 0.2)
+    set line 1 of lore of {_i} to "&7Level %{_newLevel}%: %{@slingshot_lore}%"
+
+    if {_newLevel} is 1:
+        # User can't switch weapons to refresh cooldown, so we update cooldown display manually
+        set double tag "cooldown" of custom nbt of {_i} to getNumberTag({_i}, "stoneCooldown")
+        set {_cooldown} to double tag "cooldown" of custom nbt of {_i}
+        set line 2 of lore of {_i} to "&7Cooldown: %{_cooldown}% seconds"
+    if {_newLevel} is 2:
+        send "Your Slingshot looks like it could shoot &5Snowballs &7now..." to {_player}
+        set string list tag "availableAmmo" of custom nbt of {_i} to "stone", and "snowball"
+    if {_newLevel} is 3:
+        send "Your Slingshot looks like it could shoot &5Fireballs &7now..." to {_player}
+        set string list tag "availableAmmo" of custom nbt of {_i} to "stone", and "snowball", and "firecharge"
+        set double tag "snowballCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "snowballCooldown") - 0.5)
+    if {_newLevel} is 4:    
+        send "Your Slingshot looks like it could shoot &5lasers &7now..." to {_player}
+        set string list tag "availableAmmo" of custom nbt of {_i} to "stone", and "snowball", and "firecharge", and "laser"
+        set double tag "snowballCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "snowballCooldown") - 0.5)
+        set double tag "firechargeCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "firechargeCooldown") - 1)
+    if {_newLevel} is 5:    
+        set double tag "snowballCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "snowballCooldown") - 0.5)
+        set double tag "firechargeCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "firechargeCooldown") - 1)
+        set double tag "laserCooldown" of custom nbt of {_i} to (getNumberTag({_i}, "laserCooldown") - 1)
+    return {_i}
+
+every tick:
+    loop all snowballs:
+        set {_snowball} to loop-entity
+        if metadata value "projectileType" of {_snowball} is "stone":
+            show 10 ash at location of {_snowball}
+
+on projectile hit:
+    if:
+        metadata value "projectileOwner" of projectile exists
+        victim is a living entity
+    then:
+        set {_owner} to metadata value "projectileOwner" of projectile
+        set metadata value "rangerLastDamager" of victim to {_owner}
+
+        if projectile is a snowball:
+            if metadata value "projectileType" of projectile is "stone":
+                # Stone projectile
+                damage victim by 2
+                apply knockback to victim in direction of projectile with force 1
+            else:
+                # Snowball projectile
+                damage victim by 1
+                apply a potion effect of slowness of tier 2 to victim for 4 seconds
+        if projectile is a fireball:
+            ignite victim for 4 seconds
+
+        # Damage takes a bit to register
+        wait 1 ticks
+        set {_attacker} to metadata value "projectileOwner" of projectile
+        if health of victim is 0:
+            if:
+                {_attacker} is a player
+                isCorrectClass({_attacker}, "class.ranger") is true
+                isCorrectGear({_attacker}, {_attacker}'s tool, ({@slingshot_type}), false) is true
+            then:
+                # Update stats
+                set {_attacker}'s tool to updateKills({_attacker}'s tool)
+                
+                # Determine if slingshot needs to be upgraded
+                set {_totalKills} to getNumberTag({_attacker}'s tool, "kills")
+                set {_lastMilestone} to getNumberTag({_attacker}'s tool, "lastMilestone")
+                
+                # slingshot upgrades once 3 times the previous milestone is reached
+                if:
+                    getNumberTag({_attacker}'s tool, "level") < 5
+                    {_totalKills} >= ({_lastMilestone} * 3)
+                then:
+                    set {_attacker}'s tool to upgradeSlingshot({_attacker}, {_attacker}'s tool)
+                    set double tag "lastMilestone" of custom nbt of {_attacker}'s tool to ({_lastMilestone} * 3)
+
+on death:
+    if:
+        attacker is a player
+        isCorrectClass(attacker, "class.ranger") is true
+        isCorrectGear(attacker, attacker's tool, ({@slingshot_type}), false) is true
+    then:
+        # Update stats
+        set attacker's tool to updateKills(attacker's tool)
+        
+        # Determine if slingshot needs to be upgraded
+        set {_totalKills} to getNumberTag(attacker's tool, "kills")
+        set {_lastMilestone} to getNumberTag(attacker's tool, "lastMilestone")
+        
+        # slingshot upgrades once 3 times the previous milestone is reached
+        if:
+            getNumberTag(attacker's tool, "level") < 5
+            {_totalKills} >= ({_lastMilestone} * 3)
+        then:
+            set attacker's tool to upgradeSlingshot(attacker, attacker's tool)
+            set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 3)
+
+on leftclick:
+    if:
+        isCorrectClass(player, "class.ranger") is true
+        isCorrectGear(player, player's tool, {rangerClassItemNames::*}, false) is true
+    then:
+        if isCorrectGear(player, player's tool, ({@slingshot_type}), false) is true:
+            # Player is using one of their class items, cancel the default right click event
+            cancel event
+            set {_availableAmmoTypes::*} to string list tag "availableAmmo" of custom nbt of player's tool
+            loop {_availableAmmoTypes::*}:
+                if string tag "currentAmmoType" of custom nbt of player's tool is loop-value:
+                    # Get next ammo type
+                    set {_index} to loop-index parsed as number
+                    set {_nextIndex} to {_index} + 1
+
+                    # Wrap around if at end of list
+                    set {_size} to size of {_availableAmmoTypes::*}
+                    if {_nextIndex} > size of {_availableAmmoTypes::*}:
+                        set {_nextIndex} to 1
+
+                    set {_nextAmmoType} to {_availableAmmoTypes::%{_nextIndex}%}
+                    set string tag "currentAmmoType" of custom nbt of player's tool to {_nextAmmoType}
+                    switch {_nextAmmoType}:
+                        case "stone":
+                            set {_newName} to mini message from {@slingshot_name_stone}
+                            set {_stoneCooldown} to double tag "stoneCooldown" of custom nbt of player's tool
+                            set double tag "cooldown" of custom nbt of player's tool to {_stoneCooldown}
+                            set line 2 of lore of player's tool to "&7Cooldown: %{_stoneCooldown}% seconds"
+                        case "snowball":
+                            set {_newName} to mini message from {@slingshot_name_snowball}
+                            set {_snowballCooldown} to double tag "snowballCooldown" of custom nbt of player's tool
+                            set double tag "cooldown" of custom nbt of player's tool to {_snowballCooldown}
+                            set line 2 of lore of player's tool to "&7Cooldown: %{_snowballCooldown}% seconds"
+                        case "firecharge":
+                            set {_newName} to mini message from {@slingshot_name_firecharge}
+                            set {_firechargeCooldown} to double tag "firechargeCooldown" of custom nbt of player's tool
+                            set double tag "cooldown" of custom nbt of player's tool to {_firechargeCooldown}
+                            set line 2 of lore of player's tool to "&7Cooldown: %{_firechargeCooldown}% seconds"
+                        case "laser":
+                            set {_newName} to mini message from {@slingshot_name_laser}
+                            set {_laserCooldown} to double tag "laserCooldown" of custom nbt of player's tool
+                            set double tag "cooldown" of custom nbt of player's tool to {_laserCooldown}
+                            set line 2 of lore of player's tool to "&7Cooldown: %{_laserCooldown}% seconds"
+
+                    set name of player's tool to {_newName}
+                    play sound "item.book.page_turn" with volume 1 and pitch 1.2 to player
+                    stop loop
+
+on rightclick:
+    if:
+        isCorrectClass(player, "class.ranger") is true
+        isCorrectGear(player, player's tool, {rangerClassItemNames::*}, false) is true
+    then:
+        if isCorrectGear(player, player's tool, ({@slingshot_type}), false) is true:
+            # Player is using one of their class items, cancel the default right click event
+            cancel event
+
+            set {_ammoType} to string tag "currentAmmoType" of custom nbt of player's tool
+
+            if metadata value "is%{_ammoType}%OnCooldown" of player exists:
+                send action bar "&5%{_ammoType}% &7is on cooldown!" to player
+                stop
+
+            set metadata value "is%{_ammoType}%OnCooldown" of player to true
+            set {_projectileSpawn} to location 1 block in front of player's eyes
+
+            switch {_ammoType}:
+                case "stone":
+                    spawn a snowball at {_projectileSpawn}
+                    set {_stone} to last spawned entity
+                    set item of {_stone} to air
+                    set yaw of {_stone} to yaw of player
+                    set pitch of {_stone} to pitch of player
+                    set {_v} to vector in direction of player
+                    set velocity of {_stone} to {_v}
+                    set metadata value "projectileOwner" of {_stone} to player
+                    set metadata value "projectileType" of {_stone} to "stone"
+                    play sound "entity.snowball.throw" with volume 1 and pitch 0.5 to player
+
+                case "snowball":
+                    spawn a snowball at {_projectileSpawn}
+                    set {_snowball} to last spawned entity
+                    set {_v} to vector in direction of player
+                    set velocity of {_snowball} to {_v} * 1.75
+                    set metadata value "projectileOwner" of {_snowball} to player
+                    play sound "entity.snowball.throw" with volume 1 and pitch 1.2 to player
+
+                case "firecharge":
+                    spawn a fireball at {_projectileSpawn}
+                    set {_firecharge} to last spawned entity
+                    set {_v} to vector in direction of player
+                    set velocity of {_firecharge} to {_v} * 0.8
+                    set metadata value "projectileOwner" of {_firecharge} to player
+                    play sound "entity.blaze.shoot" with volume 1 and pitch 1 to player
+
+                case "laser":
+                    set {_laserLocation} to {_projectileSpawn}
+                    set {_v} to vector in direction of player
+                    set y-coordinate of {_v} to 0
+                    
+                    loop {@laser_range} times:
+                        set {_laserLocation} to {_laserLocation} ~ {_v}
+                        
+                        # Create laser beam effect
+                        set {_particle} to wax off
+                        show 1 {_particle} at {_laserLocation}
+                        set {_particleLoc} to location 0.1 blocks above {_laserLocation}
+                        show 1 {_particle} at {_particleLoc}
+                        set {_particleLoc} to location 0.1 blocks below {_laserLocation}
+                        show 1 {_particle} at {_particleLoc}
+                        set {_particleLoc} to location 0.1 blocks left of {_laserLocation}
+                        show 1 {_particle} at {_particleLoc}
+                        set {_particleLoc} to location 0.1 blocks right of {_laserLocation}
+                        show 1 {_particle} at {_particleLoc}
+                        
+                        # Check for collision
+                        if block at {_laserLocation} is solid:
+                            # create a safe explosion of force 2 at {_laserLocation}
+                            show 50 smoke at {_laserLocation}
+                            stop loop
+                        
+                        # Check for entity hit (compare beam position to entity eye position)
+                        loop entities in radius 2 of {_laserLocation}:
+                            # Use the entity's eye location so the beam targets heads rather than their feet/center
+                            if loop-entity is a living entity:
+                                set {_hit} to false
+                                if distance between {_laserLocation} and eye location of loop-entity <= 0.75:
+                                    set {_hit} to true
+                                if distance between {_laserLocation} and location of loop-entity <= 0.75:
+                                    set {_hit} to true
+                                if {_hit} is true:
+                                    make player damage loop-entity by 5
+                                    apply a potion effect of levitation of tier 2 to loop-entity for 2 seconds
+                                    apply a potion effect of glowing of tier 1 to loop-entity for 2 seconds
+                                    stop loop
+
+                        # Check range
+                        if distance between {_projectileSpawn} and {_laserLocation} > {@laser_range}:
+                            create a safe explosion of force 2 at {_laserLocation}
+                            stop loop
+    
+            set {_c} to getTimespanTag(player's tool, "cooldown")
+            wait {_c}
+            send action bar "&5%{_ammoType}% &7is ready to fire!" to player
+            play sound "block.note_block.chime" with volume 0.2 and pitch 0.75 to player
+            delete metadata value "is%{_ammoType}%OnCooldown" of player
+            delete metadata value "islaserOnCooldown" of player
+
+command /giverangerItems:
+    permission: op
+    trigger:
+        set {_name} to mini message from {@slingshot_name_stone}
+        set {_slingshot} to createClassItem(lead, {_name}, {@slingshot_lore}, "&cKills", {@initial_stone_cooldown})
+        set string tag "itemType" of custom nbt of {_slingshot} to {@slingshot_type}
+        set string tag "currentAmmoType" of custom nbt of {_slingshot} to "stone"
+        set string list tag "availableAmmo" of custom nbt of {_slingshot} to "stone"
+        set double tag "cooldown" of custom nbt of {_slingshot} to {@initial_stone_cooldown}
+        set double tag "stoneCooldown" of custom nbt of {_slingshot} to {@initial_stone_cooldown}
+        set double tag "snowballCooldown" of custom nbt of {_slingshot} to {@initial_snowball_cooldown}
+        set double tag "firechargeCooldown" of custom nbt of {_slingshot} to {@initial_firecharge_cooldown}
+        set double tag "laserCooldown" of custom nbt of {_slingshot} to {@initial_laser_cooldown}
+        set double tag "level" of custom nbt of {_slingshot} to 0
+        set double tag "maxLevel" of custom nbt of {_slingshot} to 5
+        set double tag "lastMilestone" of custom nbt of {_slingshot} to 25
+        give {_slingshot} to player
+
+command /clearrangermetadata:
+    permission: class.ranger
+    trigger:
+        delete metadata value "is%{_ammoType}%OnCooldown" of player
+        delete metadata value "isstoneOnCooldown" of player
+        delete metadata value "issnowballOnCooldown" of player
+        delete metadata value "isfirechargeOnCooldown" of player
+        delete metadata value "islaserOnCooldown" of player
+        send "Cleared metadata." to player

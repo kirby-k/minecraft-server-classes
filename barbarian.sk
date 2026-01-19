@@ -2,13 +2,14 @@ options:
     soulboundText: "&9Soulbound"
 
     axeItem: wooden axe
-    axeItemName: "&4&lBarbarian's Axe"
+    axeItem_type: "Barbarian's Axe"
+    axeItemName: "<gradient:#A20000:#340000:#731313><bold>Barbarian's Axe"
     axeItemLore: "&7Grants absorption and regeneration on hit."
     initial_ability_cooldown: 8
 
 on load:
     clear {barbarianClassItemNames::*}
-    set {barbarianClassItemNames::*} to {@axeItemName}
+    set {barbarianClassItemNames::*} to {@axeItem_type}
 
 function upgradeAxe(p: player, i: item, newType: item, cooldown: number) :: item:
     send "&2Your %name of {_i}% &2glows brightly as it transforms!" to {_p}
@@ -16,6 +17,7 @@ function upgradeAxe(p: player, i: item, newType: item, cooldown: number) :: item
 
     set {_newAxe} to unbreakable {_newType} named name of {_i}
     set lore of {_newAxe} to {_oldLore::*}
+    set string tag "itemType" of custom nbt of {_newAxe} to {@axeItem_type}
     set double tag "kills" of custom nbt of {_newAxe} to getNumberTag({_i}, "kills")
     set double tag "cooldown" of custom nbt of {_newAxe} to {_cooldown}
     set boolean tag "isOnCooldown" of custom nbt of {_newAxe} to false
@@ -23,8 +25,10 @@ function upgradeAxe(p: player, i: item, newType: item, cooldown: number) :: item
     return {_newAxe}
 
 on tool change:
-    if name of new tool is {@axeItemName}:
-        apply slowness 1 to player for 10 day
+    if name of new tool is {@axeItem_type}:
+        apply a potion effect of slowness of tier 1 to the player for 10 days
+            hide the particles
+            hide the icon
     else:
         remove slowness from player
 
@@ -32,7 +36,7 @@ on death:
     if:
         attacker is a player
         isCorrectClass(attacker, "class.barbarian") is true
-        isCorrectGear(attacker, attacker's tool, ({@axeItemName})) is true
+        isCorrectGear(attacker, attacker's tool, ({@axeItem_type})) is true
     then:
         set attacker's tool to updateKills(attacker's tool)
 
@@ -86,26 +90,27 @@ on damage:
     if:
         attacker is a player
         isCorrectClass(attacker, "class.barbarian") is true
-        isCorrectGear(attacker, attacker's tool, {barbarianClassItemNames::*}) is true
+        isCorrectGear(attacker, attacker's tool, ({@axeItem_type})) is true
         isOnCooldown(attacker, attacker's tool) is false
     then:
         set boolean tag "isOnCooldown" of custom nbt of attacker's tool to true
         if attacker's tool is wooden axe:
-            apply regeneration 1 to attacker for 5 second
+            apply a potion effect of regeneration of tier 1 to attacker for 5 second
         if attacker's tool is copper axe:
-            apply regeneration 1 to attacker for 6 second
+            apply a potion effect of regeneration of tier 1 to attacker for 6 second
+            apply a potion effect of regeneration of tier 1 to attacker for 5 second
         if attacker's tool is golden axe:
-            apply absorption 1 to attacker for 1.5 second
-            apply regeneration 1 to attacker for 7 second
+            apply a potion effect of absorption of tier 1 to attacker for 1.5 second
+            apply a potion effect of regeneration of tier 1 to attacker for 7 second
         if attacker's tool is iron axe:
-            apply absorption 1 to attacker for 2.5 second
-            apply regeneration 1 to attacker for 10 second
+            apply a potion effect of absorption of tier 1 to attacker for 2.5 second
+            apply a potion effect of regeneration of tier 1 to attacker for 10 second
         if attacker's tool is diamond axe:
-            apply absorption 2 to attacker for 3 second
-            apply regeneration 2 to attacker for 7.5 second
+            apply a potion effect of absorption of tier 2 to attacker for 3 second
+            apply a potion effect of regeneration of tier 2 to attacker for 7.5 second
         if attacker's tool is netherite axe:
-            apply absorption 2 to attacker for 3 second
-            apply regeneration 3 to attacker for 3 second
+            apply a potion effect of absorption of tier 2 to attacker for 3 second
+            apply a potion effect of regeneration of tier 3 to attacker for 3 second
 
         play sound "entity.ravager.roar" with volume 0.5 and pitch 1.5 to attacker
         set {_eye} to eye location of attacker
@@ -120,17 +125,19 @@ on damage:
         set boolean tag "isOnCooldown" of custom nbt of attacker's tool to false
 
 command /givebarbarianaxe:
-    permission: class.barbarian
+    permission: op
     trigger:
-        set {_axe} to createClassItem({@axeItem}, {@axeItemName}, {@axeItemLore}, "&cKills", {@initial_ability_cooldown})
+        set {_name} to mini message from {@axeItemName}
+        set {_axe} to createClassItem({@axeItem}, {_name}, {@axeItemLore}, "&cKills", {@initial_ability_cooldown})
+        set string tag "itemType" of custom nbt of {_axe} to {@axeItem_type}
         set double tag "kills" of custom nbt of {_axe} to 0
         set double tag "cooldown" of custom nbt of {_axe} to {@initial_ability_cooldown}
         set boolean tag "isOnCooldown" of custom nbt of {_axe} to false
         give {_axe} to player
 
         # send "&6&lYour prayers have been answered..." to player
-        # apply nausea 1 to player for 9 seconds
-        # apply blindness 1 to player for 6 seconds
+        # apply a potion effect of nausea of tier 1 to the player for 9 seconds
+        # apply a potion effect of blindness of tier 1 to the player for 6 seconds
         # play sound "entity.piglin_brute.angry" with volume 4 and pitch 0.5 to player
         # play sound "entity.ghast.ambient" with volume 4 and pitch 0.5 to player
         # play 1 end rod above player's head

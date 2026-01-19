@@ -1,0 +1,216 @@
+options:
+    soulboundText: "&9Soulbound"
+
+    dagger_type: "Silver Tracer"
+    dagger_name: "<gradient:#BEBEBE:#FFFFFF><bold>Silver Tracer"
+    dagger_lore: "&7Right-click to &1blink &7forward, or to your target."
+    dagger_lore_backstab_mult: "1.5x"
+    initial_backstab_mult: 1.5
+    initial_wither_strength: 1
+    initial_untargeted_blink_distance: 5
+    initial_targeted_blink_distance: 10
+    initial_blink_cooldown: 12
+    initial_backstab_cooldown: 1
+
+on load:
+    clear {assassinClassItemNames::*}
+    set {assassinClassItemNames::*} to {@dagger_type}
+
+function isBackstab(attacker: player, victim: entity) :: boolean:
+    # Subtract 180 from angle to normalize directions, otherwise 0 and 360 are treated differently
+    set {_attackerYaw} to (yaw of {_attacker} - 180)
+    set {_victimYaw} to (yaw of {_victim} - 180)
+    set {_angleDiff} to abs(({_attackerYaw} - {_victimYaw}))
+    if {_angleDiff} < 50:
+        return true
+    else:
+        return false
+
+function upgradeDagger(player: player, i: item) :: item:
+    set {_newCooldown} to getNumberTag({_i}, "cooldown") - 1
+    set {_newBackstabCooldown} to getNumberTag({_i}, "backstabCooldown") - 1
+    set {_newBackstab} to (getNumberTag({_i}, "backstabMult") + 0.1)
+    set {_newLevel} to (getNumberTag({_i}, "level") + 1)
+
+    send "You feel your &cbackstabs &7become sharper, and your &1blinks &7more precise! - &5Level %{_newLevel}%" to {_player}
+
+    set double tag "level" of custom nbt of {_i} to {_newLevel}
+    set double tag "backstabMult" of custom nbt of {_i} to {_newBackstab}
+    set double tag "untargeted_blink_distance" of custom nbt of {_i} to (getNumberTag({_i}, "untargeted_blink_distance") + 1)
+    set double tag "targeted_blink_distance" of custom nbt of {_i} to (getNumberTag({_i}, "targeted_blink_distance") + 1)
+    set double tag "cooldown" of custom nbt of {_i} to {_newCooldown}
+    set line 1 of lore of {_i} to "&7Level %{_newLevel}%: %{@dagger_lore}% &cBackstab &7Multiplier: %{_newBackstab}%x"
+
+    if {_newLevel} is 2:
+        enchant {_i} with looting 1
+    if {_newLevel} is 3:
+        set double tag "witherStrength" of custom nbt of {_i} to (getNumberTag({_i}, "witherStrength") + 1)
+        enchant {_i} with sharpness 1
+    if {_newLevel} is 4:    
+        enchant {_i} with sharpness 2
+    if {_newLevel} is 5:    
+        set double tag "witherStrength" of custom nbt of {_i} to (getNumberTag({_i}, "witherStrength") + 1)
+        enchant {_i} with sharpness 3
+        enchant {_i} with looting 2
+    return {_i}
+
+function untargeted_blink(player: player, distance: number):
+    # Blink forward a set distance
+    loop {_distance} times:
+        set {_check_loc} to location ((loop-iteration)) blocks in front of {_player}
+        set y-coordinate of {_check_loc} to y-coordinate of {_player} 
+        
+        # Check if the destination AND the block above it (head space) are clear
+        if:
+            block at {_check_loc} is passable
+            block above {_check_loc} is passable
+        then:
+            set {_final_loc} to {_check_loc}
+        else:
+            exit loop
+    
+    # Execute teleport if a safe spot was found
+    if {_final_loc} is set:
+        play sound "entity.enderman.teleport" with pitch 1 to {_player}
+        teleport {_player} to {_final_loc}
+        apply a potion effect of invisibility of tier 1 to {_player} for 2 seconds:
+            hide the particles
+            hide the icon
+
+    else:
+        send "No safe location to blink!" to {_player}
+
+on damage:
+    if:
+        attacker is a player
+        isCorrectClass(attacker, "class.assassin") is true
+        isCorrectGear(attacker, attacker's tool, ({@dagger_type}), false) is true
+        isBackstab(attacker, victim) is true
+        metadata value "wasBackstabbedRecently" of victim is not set
+    then:
+        set {_damage} to damage
+        set {_backstabMult} to getNumberTag(attacker's tool, "backstabMult")
+        set {_finalDamage} to ({_damage} * {_backstabMult})
+        set damage to {_finalDamage}
+
+        set {_witherDamage} to getNumberTag(attacker's tool, "witherStrength")
+        apply a potion effect of wither of tier {_witherDamage} to victim for 4 seconds
+
+        send action bar "&cBackstab&7! &1Blink &7reset!" to attacker
+        play sound "entity.player.attack.critical" with pitch 1.5 to attacker
+        set boolean tag "isOnCooldown" of custom nbt of attacker's tool to false
+        set metadata value "blinkResetByBackstab" of attacker to true
+
+        set metadata value "wasBackstabbedRecently" of victim to true
+        set {_c} to getTimespanTag(attacker's tool, "backstabCooldown")
+        wait getTimespanTag(attacker's tool, "backstabCooldown")
+        show 20 smoke at victim's head
+        delete metadata value "wasBackstabbedRecently" of victim
+
+on death:
+    if:
+        attacker is a player
+        isCorrectClass(attacker, "class.assassin") is true
+        isCorrectGear(attacker, attacker's tool, ({@dagger_type}), false) is true
+    then:
+        # Update stats
+        set attacker's tool to updateKills(attacker's tool)
+        
+        # Determine if dagger needs to be upgraded
+        set {_totalKills} to getNumberTag(attacker's tool, "kills")
+        set {_lastMilestone} to getNumberTag(attacker's tool, "lastMilestone")
+        
+        # dagger upgrades once 3 times the previous milestone is reached
+        if:
+            getNumberTag(attacker's tool, "level") < 5
+            {_totalKills} >= ({_lastMilestone} * 3)
+        then:
+            set attacker's tool to upgradeDagger(attacker, attacker's tool)
+            set double tag "lastMilestone" of custom nbt of attacker's tool to ({_lastMilestone} * 3)
+
+on rightclick:
+    if:
+        isCorrectClass(player, "class.assassin") is true
+        isCorrectGear(player, player's tool, {assassinClassItemNames::*}, false) is true
+    then:
+        # Dagger Blink
+        if:
+            isCorrectGear(player, player's tool, ({@dagger_type}), false) is true
+            isOnCooldown(player, player's tool) is false
+        then:
+            # Player is using one of their class items, cancel the default right click event
+            cancel event
+
+            # Acquire Target
+            set {_target} to target entity of player
+
+            if {_target} is not set:
+                # No target, untargeted blink
+                set {_distance} to getNumberTag(player's tool, "untargeted_blink_distance")
+                untargeted_blink(player, {_distance})
+                set boolean tag "isOnCooldown" of custom nbt of player's tool to true
+                delete metadata value "blinkResetByBackstab" of player
+            else:
+                # Target found
+                set {_distance} to getNumberTag(player's tool, "targeted_blink_distance")
+
+                if distance between player and {_target} > {_distance}:
+                    # Target out of range, untargeted blink
+                    untargeted_blink(player, {_distance})
+                    set boolean tag "isOnCooldown" of custom nbt of player's tool to true
+                    delete metadata value "blinkResetByBackstab" of player
+                else:
+                    # Blink behind target
+                    set {_loc} to location 1.5 blocks behind {_target}
+                    teleport player to {_loc}
+                    set player's yaw to yaw of {_target}
+
+                    set {_effects} to compound tag "daggerEffects[0]" of custom nbt of player's tool
+                    applyEffects(player, {_effects}, "buffs")
+                    applyEffects({_target}, {_effects}, "debuffs")
+
+                    play sound "entity.enderman.teleport" with pitch 1 to player
+                    set boolean tag "isOnCooldown" of custom nbt of player's tool to true
+
+            if isOnCooldown(player, player's tool) is true:
+                # Use a per-player blink instance id so older timers cannot clear newer cooldowns
+                if {blink.instance.%player%} is not set:
+                    set {blink.instance.%player%} to 0
+                set {blink.instance.%player%} to ({blink.instance.%player%} + 1)
+                set {_myInstance} to {blink.instance.%player%}
+                set metadata value "blinkInstance" of player to {_myInstance}
+
+                set {_c} to getTimespanTag(player's tool, "cooldown")
+                wait {_c}
+
+                # Only the timer belonging to the current blink instance may clear the cooldown
+                if metadata value "blinkInstance" of player is {_myInstance}:
+                    if metadata value "blinkResetByBackstab" of player is not set:
+                        # Cooldown can be reset by other functions, so check again
+                        send action bar "&1Blink &7 is ready!" to player
+                        play sound "block.note_block.chime" with pitch 2 to player
+                        set boolean tag "isOnCooldown" of custom nbt of player's tool to false
+
+command /giveassassinItems:
+    permission: op
+    trigger:
+        set {_name} to mini message from {@dagger_name}
+        set {_dagger} to createClassItem(iron sword, {_name}, "%{@dagger_lore}% &cBackstab &7Multiplier: %{@dagger_lore_backstab_mult}%", "&cKills", {@initial_blink_cooldown})
+        set string tag "itemType" of custom nbt of {_dagger} to {@dagger_type}
+        set double tag "backstabMult" of custom nbt of {_dagger} to {@initial_backstab_mult}
+        set double tag "witherStrength" of custom nbt of {_dagger} to {@initial_wither_strength}
+        set double tag "untargeted_blink_distance" of custom nbt of {_dagger} to {@initial_untargeted_blink_distance}
+        set double tag "targeted_blink_distance" of custom nbt of {_dagger} to {@initial_targeted_blink_distance}
+        set double tag "cooldown" of custom nbt of {_dagger} to {@initial_blink_cooldown}
+        set double tag "backstabCooldown" of custom nbt of {_dagger} to {@initial_backstab_cooldown}
+        set double tag "level" of custom nbt of {_dagger} to 0
+        set double tag "maxLevel" of custom nbt of {_dagger} to 5
+        set double tag "lastMilestone" of custom nbt of {_dagger} to 25
+        set compound list tag "blinkEffects" of custom nbt of {_dagger} to nbt compound from "{debuffs:[{type:'blindness',strength:1,duration:1}],buffs:[{type:'invisibility',strength:1,duration:2},{type:'speed',strength:2,duration:1},{type:'resistance',strength:10,duration:1}]}"
+        give {_dagger} to player
+
+command /yaw:
+    permission: op
+    trigger:
+        set {_yaw} to yaw of player
+        send "Your yaw is %{_yaw}%" to player
