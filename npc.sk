@@ -3,7 +3,6 @@ on load:
     set {npc::mom::locations::pit} to location(-1855, 263, 2362)
     set {npc::mom::locations::cage} to location(-1860, 263, 2362)
     set {npc::mom::name} to "Mom"
-    set {npc::mom::speed} to 0
     
 function set_movespeed(entity: entity, movespeed: number):
     set {_nbt} to nbt of {_entity}
@@ -21,43 +20,9 @@ command /resetMom:
         set {_mom} to entity from {npc::mom::uuid}
         set name of {_mom} to {npc::mom::name}
         set_movespeed({_mom}, 0)
-
-        set {_nbt} to nbt of {_mom}
-
-        set string tag "VillagerData;profession" of {_nbt} to "minecraft:librarian"
-        # Set level to 2 (Apprentice) so they can use the trades
-        set int tag "VillagerData;level" of {_nbt} to 2
-        set string tag "VillagerData;type" of {_nbt} to "minecraft:plains"
-
-        set {_recipe1} to new nbt compound
-        set {_buy} to new nbt compound
-        set int tag "count" of {_buy} to 1
-        set string tag "id" of {_buy} to "minecraft:stick"
-        set compound tag "buy" of {_recipe1} to {_buy}
-
-        set {_sell} to new nbt compound
-        set int tag "count" of {_sell} to 10
-        set string tag "id" of {_sell} to "minecraft:stick"
-        set compound tag "sell" of {_recipe1} to {_sell}
-
-        set int tag "maxUses" of {_recipe1} to 1
-        set float tag "priceMultiplier" of {_recipe1} to 0.0
-        set int tag "xp" of {_recipe1} to 2
-
-        set {_newOffers} to new nbt compound
-        set compound list tag "Recipes" of {_newOffers} to {_recipe1}
-        # add {_recipe1} to compound list tag "Recipes" of {_newOffers}
-        # set {_recipes} to new compound list
-        # add {_recipe1} to {_recipes}
-        # set compound list tag "Recipes" of {_newOffers} to {_recipes}
-        broadcast "offers: %{_newOffers}%"
-        set compound tag "Offers" of {_nbt} to {_newOffers}
-
-        set {_offers} to compound tag "Offers" of {_nbt}
-        broadcast "mom offers: %{_offers}%"
-        broadcast "mom nbt: %{_nbt}%"
-
-command /attr:
-    trigger:
-        set {_attr} to movement speed modifier of player
-        broadcast "attr: %{_attr}%"
+        
+        # Build the NBT string directly
+        set {_nbtString} to "{VillagerData:{profession:""minecraft:butcher"",level:2,type:""minecraft:plains""},Offers:{Recipes:[{buy:{id:""minecraft:poppy"",count:1},sell:{id:""minecraft:cookie"",count:10},uses:0,maxUses:1,rewardExp:1b,demand:0,priceMultiplier:0.0f,xp:2}]}}"
+        
+        # Apply NBT using the merge method
+        execute console command "/data merge entity %uuid of {_mom}% %{_nbtString}%"
