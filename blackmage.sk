@@ -202,7 +202,8 @@ on explode:
         if shooter is a player:
             cancel event 
             create a safe explosion of force 0 at event-location
-            draw 30 smoke particles with extra value 0.05 at event-location
+            draw 15 smoke particles with extra value 0.1 at event-location
+            draw 15 flame particles with extra value 0.1 at event-location
 
 command /givewands:
     permission: op

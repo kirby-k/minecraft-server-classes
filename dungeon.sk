@@ -51,8 +51,3 @@ on bound enter with id "room1":
 
 on bound exit with id "room1":
     send "Debug: Player has exited Room 1!" to all players
-
-command /hint1:
-    permission: op
-    trigger:
-        send "&5The village elder has been eyeing you suspiciously..." to all players
