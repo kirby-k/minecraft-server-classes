@@ -1,8 +1,9 @@
 # Fix dungeon size
 on load:
+    delete bound with id "room1"
     clear {dungeon::spawns::enemies::*}
 
-    create a bound with id "room1" within location(-1883, 257, 2363) and location(-1871, 500, 2348)
+    create a bound with id "room1" within location(-1882, 257, 2363) and location(-1872, 266, 2349)
     set {dungeon::areas::room1} to bound of id "room1"
     set {dungeon::areas::room1::has_been_entered} to false
     set {dungeon::areas::room1::enemy_spawn::1} to location(-1881, 263, 2349, world) # Back right corner
@@ -28,26 +29,26 @@ on bound enter with id "room1":
     send "Debug: Player has entered Room 1!" to all players
     set {_size} to size of bound blocks within bound with id "room1"
     send "Debug: size of %{_size}%" to all players
-    if {dungeon::areas::room1::has_been_entered} is false:
-        set {dungeon::areas::room1::has_been_entered} to true
-        set {_player_count::*} to all of the players within bound bound with id "room1"
+    # if {dungeon::areas::room1::has_been_entered} is false:
+    #     set {dungeon::areas::room1::has_been_entered} to true
+    #     set {_player_count::*} to all of the players within bound bound with id "room1"
 
-        spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:3", "skeleton:3"))
+    #     spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:3", "skeleton:3"))
 
-        loop 10 times:
-            spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:2", "skeleton:1"))
-            wait 7 seconds
+    #     loop 10 times:
+    #         spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:2", "skeleton:1"))
+    #         wait 7 seconds
 
-        wait 1 second
-        set {_monsters_alive::*} to all of the monsters within bound bound with id "room1"
-        while size of {_monsters_alive::*} > 0:
-            set {_monsters_alive::*} to all of the monsters within bound bound with id "room1"
-            wait 1 seconds
+    #     wait 1 second
+    #     set {_monsters_alive::*} to all of the monsters within bound bound with id "room1"
+    #     while size of {_monsters_alive::*} > 0:
+    #         set {_monsters_alive::*} to all of the monsters within bound bound with id "room1"
+    #         wait 1 seconds
 
-        send "Debug: Enemies have been defeated in Room 1!" to all players
-        wait 60 seconds
-        send "Debug: Enemies have refreshed in Room 1!" to all players
-        set {dungeon::areas::room1::has_been_entered} to false
+    #     send "Debug: Enemies have been defeated in Room 1!" to all players
+    #     wait 60 seconds
+    #     send "Debug: Enemies have refreshed in Room 1!" to all players
+    #     set {dungeon::areas::room1::has_been_entered} to false
 
 on bound exit with id "room1":
     send "Debug: Player has exited Room 1!" to all players

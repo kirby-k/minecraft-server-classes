@@ -1,15 +1,60 @@
 on load:
+    # Delete all current bounds
+    delete bound with id "mom_dialogue_1"
+    delete bound with id "mom_dialogue_3"
+    delete {npc::mom::dialogue::position::*}
+
+    # Mom data
+    set {npc::mom::name} to "Mom"
+
+    # Mom Locations
     set {npc::mom::locations::house} to location(-1865, 259, 2331)
     set {npc::mom::locations::pit} to location(-1855, 263, 2362)
     set {npc::mom::locations::cage} to location(-1860, 263, 2362)
-    set {npc::mom::name} to "Mom"
-    
+    create a bound with id "mom_dialogue_1" within location(-1867, 257, 2335) and location(-1864, 259, 2333)
+    create a bound with id "mom_dialogue_3" within location(-1863, 257, 2335) and location(-1860, 259, 2333)
+
+    # Mom Dialogue
+    set {npc::mom::dialogue::0::text} to "&5Mom: &7Howdy Partner! Go upstairs, change, and head outside!"
+    set {npc::mom::dialogue::1::text} to "&5Mom: &7Lookin good buddy, head out the door."
+    set {npc::mom::dialogue::0::location} to bound with id "mom_dialogue_1"
+
+    set {npc::mom::dialogue::2::text} to "&5Mom: &7Waaaaaluigi"
+    set {npc::mom::dialogue::3::text} to "&5Mom: &7HELP MEEEE"
+    set {npc::mom::dialogue::3::location} to bound with id "mom_dialogue_3"
+
 function set_movespeed(entity: entity, movespeed: number):
     set {_nbt} to nbt of {_entity}
     set {_newAttr} to new nbt compound
     set string tag "id" of {_newAttr} to "minecraft:movement_speed"
     set double tag "base" of {_newAttr} to 0.0
     add {_newAttr} to compound list tag "attributes" of {_nbt}
+
+function send_next_dialogue(recipient: player):
+    # Sends the next dialogue queued up for this specific player
+    set {_uuid} to uuid of {_recipient}
+    set {_dialogue} to {npc::mom::dialogue::%{npc::mom::dialogue::position::%{_uuid}%}%::text}
+    if {_dialogue} is set:
+        send {_dialogue} to {_recipient}
+        add 1 to {npc::mom::dialogue::position::%{_uuid}%}
+
+on bound enter with id "mom_dialogue_1":
+    set {_uuid} to uuid of player
+    if {npc::mom::dialogue::position::%{_uuid}%} is not set:
+        set {npc::mom::dialogue::position::%{_uuid}%} to 0
+
+    # Go up to dialogue option 1
+    if {npc::mom::dialogue::position::%{_uuid}%} <= 1:
+        send_next_dialogue(player)
+
+on bound enter with id "mom_dialogue_3":
+    set {_uuid} to uuid of player
+    # Go from dialogue option 2 to 3
+    if:
+        {npc::mom::dialogue::position::%{_uuid}%} >= 2
+        {npc::mom::dialogue::position::%{_uuid}%} <= 3
+    then:
+        send_next_dialogue(player)
 
 command /resetMom:
     trigger:
@@ -26,3 +71,7 @@ command /resetMom:
         
         # Apply NBT using the merge method
         execute console command "/data merge entity %uuid of {_mom}% %{_nbtString}%"
+
+        # create a bound with id "mom_dialogue_1" within location(-1868, 258, 2338) and location(-1863, 259, 2332)
+        set {_size} to size of bound blocks within bound with id "mom_dialogue_1"
+        broadcast "size: %{_size}%"
