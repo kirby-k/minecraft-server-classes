@@ -16,6 +16,25 @@ on load:
     clear {assassinClassItemNames::*}
     set {assassinClassItemNames::*} to {@dagger_type}
 
+function initializeAssassinClass(player: player):
+    execute console command "lp user %{_player}% clear"
+    execute console command "lp user %{_player}% parent add assassin"
+    set {_name} to mini message from {@dagger_name}
+    set {_dagger} to createClassItem(iron sword, {_name}, "%{@dagger_lore}% &cBackstab &7Multiplier: %{@dagger_lore_backstab_mult}%", "&cKills", {@initial_blink_cooldown})
+    set string tag "itemType" of custom nbt of {_dagger} to {@dagger_type}
+    set double tag "backstabMult" of custom nbt of {_dagger} to {@initial_backstab_mult}
+    set double tag "witherStrength" of custom nbt of {_dagger} to {@initial_wither_strength}
+    set double tag "untargeted_blink_distance" of custom nbt of {_dagger} to {@initial_untargeted_blink_distance}
+    set double tag "targeted_blink_distance" of custom nbt of {_dagger} to {@initial_targeted_blink_distance}
+    set double tag "cooldown" of custom nbt of {_dagger} to {@initial_blink_cooldown}
+    set double tag "backstabCooldown" of custom nbt of {_dagger} to {@initial_backstab_cooldown}
+    set double tag "level" of custom nbt of {_dagger} to 0
+    set double tag "maxLevel" of custom nbt of {_dagger} to 5
+    set double tag "lastMilestone" of custom nbt of {_dagger} to 25
+    set compound list tag "blinkEffects" of custom nbt of {_dagger} to nbt compound from "{debuffs:[{type:'blindness',strength:1,duration:1}],buffs:[{type:'invisibility',strength:1,duration:2},{type:'speed',strength:2,duration:1},{type:'resistance',strength:10,duration:1}]}"
+    give {_dagger} to {_player}
+
+
 function isBackstab(attacker: player, victim: entity) :: boolean:
     # Subtract 180 from angle to normalize directions, otherwise 0 and 360 are treated differently
     set {_attackerYaw} to (yaw of {_attacker} - 180)
@@ -190,27 +209,3 @@ on rightclick:
                         send action bar "&1Blink &7 is ready!" to player
                         play sound "block.note_block.chime" with pitch 2 to player
                         set boolean tag "isOnCooldown" of custom nbt of player's tool to false
-
-command /giveassassinItems:
-    permission: op
-    trigger:
-        set {_name} to mini message from {@dagger_name}
-        set {_dagger} to createClassItem(iron sword, {_name}, "%{@dagger_lore}% &cBackstab &7Multiplier: %{@dagger_lore_backstab_mult}%", "&cKills", {@initial_blink_cooldown})
-        set string tag "itemType" of custom nbt of {_dagger} to {@dagger_type}
-        set double tag "backstabMult" of custom nbt of {_dagger} to {@initial_backstab_mult}
-        set double tag "witherStrength" of custom nbt of {_dagger} to {@initial_wither_strength}
-        set double tag "untargeted_blink_distance" of custom nbt of {_dagger} to {@initial_untargeted_blink_distance}
-        set double tag "targeted_blink_distance" of custom nbt of {_dagger} to {@initial_targeted_blink_distance}
-        set double tag "cooldown" of custom nbt of {_dagger} to {@initial_blink_cooldown}
-        set double tag "backstabCooldown" of custom nbt of {_dagger} to {@initial_backstab_cooldown}
-        set double tag "level" of custom nbt of {_dagger} to 0
-        set double tag "maxLevel" of custom nbt of {_dagger} to 5
-        set double tag "lastMilestone" of custom nbt of {_dagger} to 25
-        set compound list tag "blinkEffects" of custom nbt of {_dagger} to nbt compound from "{debuffs:[{type:'blindness',strength:1,duration:1}],buffs:[{type:'invisibility',strength:1,duration:2},{type:'speed',strength:2,duration:1},{type:'resistance',strength:10,duration:1}]}"
-        give {_dagger} to player
-
-command /yaw:
-    permission: op
-    trigger:
-        set {_yaw} to yaw of player
-        send "Your yaw is %{_yaw}%" to player

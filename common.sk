@@ -150,3 +150,92 @@ on respawn:
             give loop-value to player
         delete {soulbound.drops::%player's uuid%::*}
         send "&7Your %{@soulboundText}% &7items return to you..." to player
+
+# Special Sign Logic
+on sign change:
+    loop 4 times:
+        if line loop-number contains "&":
+            set line loop-number to colored line loop-number
+
+on rightclick on mangrove sign:
+    set {_sign_behavior} to string tag "components;minecraft:custom_data;BlockEntityTag;server_modification_sign" of nbt of event-block
+
+    if {_sign_behavior} is not set:
+        broadcast "Debug: Sign has no special behavior."
+        stop
+
+    cancel event
+    if {_sign_behavior} is "difficulty_selection":
+        set {_chest} to chest inventory with 3 rows named "&eSelect Dungeon Difficulty"
+        set slot 11 of {_chest} to poppy named "&6Normal" with lore "&7The intended experience."
+        set slot 15 of {_chest} to wither rose named "&cQuite Difficult" with lore "&7For true gamers only."
+        open {_chest} to player
+
+    if {_sign_behavior} is "class_selection":
+        set {_chest} to chest inventory with 3 rows named "&eSelect Class"
+        set slot 11 of {_chest} to wooden axe named "&cBarbarian" with lore "&7Slow warrior with a powerful axe that heals on hit."
+        set slot 12 of {_chest} to lead named "&eRanger" with lore "&7Slingshot expert with multiple types of ammo."
+        set slot 13 of {_chest} to black candle named "&8Blackmage" with lore "&7Evil(?) mage wielding wither skull and life drain spells."
+        set slot 14 of {_chest} to bow named "&dPriestess" with lore "&7Supports allies with a healing bow, and chases enemies with an Iron Golem and Wolf summons."
+        set slot 15 of {_chest} to iron sword named "&9Assassin" with lore "&7Blinks behind enemies to deliver critical hits, then vanishes just as quickly."
+        open {_chest} to player
+
+on inventory click:
+    if name of current inventory is "&eSelect Dungeon Difficulty":
+        cancel event
+        if event-item is poppy named "&6Normal":
+            set {dungeon::difficulty} to "normal"
+            broadcast "The dungeon stirs to life..."
+        else if event-item is wither_rose named "&cQuite Difficult":
+            set {dungeon::difficulty} to "hard"
+            broadcast "The monsters in the dungeon have been listening to Hurly... Brace yourself."
+        close player's inventory
+
+    if name of current inventory is "&eSelect Class":
+        cancel event
+        if event-item is wooden axe named "&cBarbarian":
+            clear player's inventory
+            initializeBarbarianClass(player)
+        else if event-item is lead named "&eRanger":
+            clear player's inventory
+            initializeRangerClass(player)
+        else if event-item is black candle named "&8Blackmage":
+            clear player's inventory
+            initializeBlackmageClass(player)
+        else if event-item is bow named "&dPriestess":
+            clear player's inventory
+            initializePriestessClass(player)
+        else if event-item is iron sword named "&9Assassin":
+            clear player's inventory
+            initializeAssassinClass(player)
+        close player's inventory
+
+command /adminGiveDifficultySign:
+    permission: op
+    trigger:
+        set {_sign} to 1 of mangrove_sign named "&eDungeon Difficulty Selection" with lore "&7Right click to select dungeon difficulty."
+        set string tag "BlockEntityTag;server_modification_sign" of custom nbt of {_sign} to "difficulty_selection"
+        give player {_sign}
+
+command /adminGiveClassSign:
+    permission: op
+    trigger:
+        set {_sign} to 1 of mangrove_sign named "&eClass Selection" with lore "&7Right click to select a class."
+        set string tag "BlockEntityTag;server_modification_sign" of custom nbt of {_sign} to "class_selection"
+        give player {_sign}
+
+command /adminGiveClass <text>:
+    permission: op
+    trigger:
+        if arg-1 is "barbarian":
+            initializeBarbarianClass(player)
+        else if arg-1 is "ranger":
+            initializeRangerClass(player)
+        else if arg-1 is "blackmage":
+            initializeBlackmageClass(player)
+        else if arg-1 is "priestess":
+            initializePriestessClass(player)
+        else if arg-1 is "assassin":
+            initializeAssassinClass(player)
+        else:
+            send "&cUnknown class: %arg-1%" to player

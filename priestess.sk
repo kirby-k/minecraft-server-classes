@@ -22,6 +22,44 @@ options:
 on load:
     clear {priestessClassItemNames::*}
     set {priestessClassItemNames::*} to {@bow_type}, and {@ig_summon_item_type}, and {@familiar_summon_item_type}
+        
+function initializePriestessClass(player: player):
+    execute console command "lp user %{_player}% clear"
+    execute console command "lp user %{_player}% parent add priestess"
+    set {_name} to mini message from {@bow_name}
+    set {_bow} to createClassItem(bow, {_name}, "%{@bow_lore}% Heal Multiplier: %{@bow_lore_heal_mult}%", {@bow_counter}, 0)
+    set string tag "itemType" of custom nbt of {_bow} to {@bow_type}
+    set double tag "healMult" of custom nbt of {_bow} to {@initial_heal_mult}
+    set double tag "level" of custom nbt of {_bow} to 0
+    set double tag "maxLevel" of custom nbt of {_bow} to 5
+    set boolean tag "levelUpSummons" of custom nbt of {_bow} to false
+    set double tag "totalHealed" of custom nbt of {_bow} to 0
+    set double tag "lastMilestone" of custom nbt of {_bow} to 25
+    enchant {_bow} with infinity 1
+    give {_bow} to {_player}
+    give 1 arrow to {_player}
+
+    set {_ig_summon_item} to createClassItem(wither rose, {@ig_summon_item_name}, {@ig_summon_item_lore}, {@ig_summon_item_counter}, {@initial_ig_summon_item_cooldown})
+    set string tag "itemType" of custom nbt of {_ig_summon_item} to {@ig_summon_item_type}
+    set string tag "name" of custom nbt of {_ig_summon_item} to "Fernando"
+    set double tag "level" of custom nbt of {_ig_summon_item} to 0
+    set double tag "cooldown" of custom nbt of {_ig_summon_item} to {@initial_ig_summon_item_cooldown}
+    set boolean tag "isOnCooldown" of custom nbt of {_ig_summon_item} to false
+    set double tag "totalSummons" of custom nbt of {_ig_summon_item} to 0
+    set double tag "lastMilestone" of custom nbt of {_ig_summon_item} to 10
+    set compound list tag "golemEffects" of custom nbt of {_ig_summon_item} to nbt compound from "{debuffs:[{type:'slowness',strength:1,duration:9999},{type:'wither',strength:2,duration:9999}, {type:'poison',strength:4,duration:9999}],buffs:[{}]}"
+    give {_ig_summon_item} to {_player}
+
+    set {_id} to random uuid
+    set {_familiar_summon_item} to createClassItem(bone, {@familiar_summon_item_name}, {@familiar_summon_item_lore}, {@familiar_summon_item_counter}, 0)
+    set string tag "itemType" of custom nbt of {_familiar_summon_item} to {@familiar_summon_item_type}
+    set string tag "name" of custom nbt of {_familiar_summon_item} to "Familiar"
+    set double tag "level" of custom nbt of {_familiar_summon_item} to 0
+    set boolean tag "isOnCooldown" of custom nbt of {_familiar_summon_item} to false
+    set double tag "totalSummons" of custom nbt of {_familiar_summon_item} to 0
+    set double tag "lastMilestone" of custom nbt of {_familiar_summon_item} to 25
+    set compound list tag "familiarEffects" of custom nbt of {_familiar_summon_item} to nbt compound from "{buffs:[{type:'speed',strength:2,duration:9999},{type:'resistance',strength:1,duration:9999}]}"
+    give {_familiar_summon_item} to {_player}
 
 function updateHealedLife(i: item, heal: number) :: item:
     set {_totalHealed} to getNumberTag({_i}, "totalHealed")
@@ -225,41 +263,3 @@ on rightclick:
 
             # Update stats
             set player's tool to updateSummons(player's tool)
-
-command /givePriestessItems:
-    permission: op
-    trigger:
-        set {_name} to mini message from {@bow_name}
-        set {_bow} to createClassItem(bow, {_name}, "%{@bow_lore}% Heal Multiplier: %{@bow_lore_heal_mult}%", {@bow_counter}, 0)
-        set string tag "itemType" of custom nbt of {_bow} to {@bow_type}
-        set double tag "healMult" of custom nbt of {_bow} to {@initial_heal_mult}
-        set double tag "level" of custom nbt of {_bow} to 0
-        set double tag "maxLevel" of custom nbt of {_bow} to 5
-        set boolean tag "levelUpSummons" of custom nbt of {_bow} to false
-        set double tag "totalHealed" of custom nbt of {_bow} to 0
-        set double tag "lastMilestone" of custom nbt of {_bow} to 25
-        enchant {_bow} with infinity 1
-        give {_bow} to player
-        give 1 arrow to player
-
-        set {_ig_summon_item} to createClassItem(wither rose, {@ig_summon_item_name}, {@ig_summon_item_lore}, {@ig_summon_item_counter}, {@initial_ig_summon_item_cooldown})
-        set string tag "itemType" of custom nbt of {_ig_summon_item} to {@ig_summon_item_type}
-        set string tag "name" of custom nbt of {_ig_summon_item} to "Fernando"
-        set double tag "level" of custom nbt of {_ig_summon_item} to 0
-        set double tag "cooldown" of custom nbt of {_ig_summon_item} to {@initial_ig_summon_item_cooldown}
-        set boolean tag "isOnCooldown" of custom nbt of {_ig_summon_item} to false
-        set double tag "totalSummons" of custom nbt of {_ig_summon_item} to 0
-        set double tag "lastMilestone" of custom nbt of {_ig_summon_item} to 10
-        set compound list tag "golemEffects" of custom nbt of {_ig_summon_item} to nbt compound from "{debuffs:[{type:'slowness',strength:1,duration:9999},{type:'wither',strength:2,duration:9999}, {type:'poison',strength:4,duration:9999}],buffs:[{}]}"
-        give {_ig_summon_item} to player
-
-        set {_id} to random uuid
-        set {_familiar_summon_item} to createClassItem(bone, {@familiar_summon_item_name}, {@familiar_summon_item_lore}, {@familiar_summon_item_counter}, 0)
-        set string tag "itemType" of custom nbt of {_familiar_summon_item} to {@familiar_summon_item_type}
-        set string tag "name" of custom nbt of {_familiar_summon_item} to "Familiar"
-        set double tag "level" of custom nbt of {_familiar_summon_item} to 0
-        set boolean tag "isOnCooldown" of custom nbt of {_familiar_summon_item} to false
-        set double tag "totalSummons" of custom nbt of {_familiar_summon_item} to 0
-        set double tag "lastMilestone" of custom nbt of {_familiar_summon_item} to 25
-        set compound list tag "familiarEffects" of custom nbt of {_familiar_summon_item} to nbt compound from "{buffs:[{type:'speed',strength:2,duration:9999},{type:'resistance',strength:1,duration:9999}]}"
-        give {_familiar_summon_item} to player
