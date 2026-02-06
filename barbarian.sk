@@ -11,6 +11,28 @@ on load:
     clear {barbarianClassItemNames::*}
     set {barbarianClassItemNames::*} to {@axeItem_type}
 
+function initializeBarbarianClass(player: player):
+    execute console command "lp user %{_player}% clear"
+    execute console command "lp user %{_player}% parent add barbarian"
+    set {_name} to mini message from {@axeItemName}
+    set {_axe} to createClassItem({@axeItem}, {_name}, {@axeItemLore}, "&cKills", {@initial_ability_cooldown})
+    set string tag "itemType" of custom nbt of {_axe} to {@axeItem_type}
+    set double tag "kills" of custom nbt of {_axe} to 0
+    set double tag "cooldown" of custom nbt of {_axe} to {@initial_ability_cooldown}
+    set boolean tag "isOnCooldown" of custom nbt of {_axe} to false
+    give {_axe} to {_player}
+
+    # apply a potion effect of nausea of tier 1 to the player for 9 seconds
+    # apply a potion effect of blindness of tier 1 to the player for 6 seconds
+    # play sound "entity.piglin_brute.angry" with volume 4 and pitch 0.5 to player
+    # play sound "entity.ghast.ambient" with volume 4 and pitch 0.5 to player
+    # play 1 end rod above player's head
+    # wait 50 ticks
+    # play 1 end rod above player's head
+    # wait 50 ticks
+    # play 1 end rod above player's head
+    # wait 50 ticks
+
 function upgradeAxe(p: player, i: item, newType: item, cooldown: number) :: item:
     send "&2Your %name of {_i}% &2glows brightly as it transforms!" to {_p}
     set {_oldLore::*} to lore of {_i}
@@ -123,26 +145,3 @@ on damage:
         send action bar "&a&lAbility Ready!" to attacker
         play sound "block.note_block.chime" with pitch 2 to attacker
         set boolean tag "isOnCooldown" of custom nbt of attacker's tool to false
-
-command /givebarbarianaxe:
-    permission: op
-    trigger:
-        set {_name} to mini message from {@axeItemName}
-        set {_axe} to createClassItem({@axeItem}, {_name}, {@axeItemLore}, "&cKills", {@initial_ability_cooldown})
-        set string tag "itemType" of custom nbt of {_axe} to {@axeItem_type}
-        set double tag "kills" of custom nbt of {_axe} to 0
-        set double tag "cooldown" of custom nbt of {_axe} to {@initial_ability_cooldown}
-        set boolean tag "isOnCooldown" of custom nbt of {_axe} to false
-        give {_axe} to player
-
-        # send "&6&lYour prayers have been answered..." to player
-        # apply a potion effect of nausea of tier 1 to the player for 9 seconds
-        # apply a potion effect of blindness of tier 1 to the player for 6 seconds
-        # play sound "entity.piglin_brute.angry" with volume 4 and pitch 0.5 to player
-        # play sound "entity.ghast.ambient" with volume 4 and pitch 0.5 to player
-        # play 1 end rod above player's head
-        # wait 50 ticks
-        # play 1 end rod above player's head
-        # wait 50 ticks
-        # play 1 end rod above player's head
-        # wait 50 ticks

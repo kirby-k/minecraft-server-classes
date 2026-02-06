@@ -17,6 +17,24 @@ on load:
     clear {rangerClassItemNames::*}
     set {rangerClassItemNames::*} to {@slingshot_type}
 
+function initializeRangerClass(player: player):
+    execute console command "lp user %{_player}% clear"
+    execute console command "lp user %{_player}% parent add ranger"
+    set {_name} to mini message from {@slingshot_name_stone}
+    set {_slingshot} to createClassItem(lead, {_name}, {@slingshot_lore}, "&cKills", {@initial_stone_cooldown})
+    set string tag "itemType" of custom nbt of {_slingshot} to {@slingshot_type}
+    set string tag "currentAmmoType" of custom nbt of {_slingshot} to "stone"
+    set string list tag "availableAmmo" of custom nbt of {_slingshot} to "stone"
+    set double tag "cooldown" of custom nbt of {_slingshot} to {@initial_stone_cooldown}
+    set double tag "stoneCooldown" of custom nbt of {_slingshot} to {@initial_stone_cooldown}
+    set double tag "snowballCooldown" of custom nbt of {_slingshot} to {@initial_snowball_cooldown}
+    set double tag "firechargeCooldown" of custom nbt of {_slingshot} to {@initial_firecharge_cooldown}
+    set double tag "laserCooldown" of custom nbt of {_slingshot} to {@initial_laser_cooldown}
+    set double tag "level" of custom nbt of {_slingshot} to 0
+    set double tag "maxLevel" of custom nbt of {_slingshot} to 5
+    set double tag "lastMilestone" of custom nbt of {_slingshot} to 25
+    give {_slingshot} to {_player}
+
 function upgradeSlingshot(player: player, i: item) :: item:
     set {_newLevel} to (getNumberTag({_i}, "level") + 1)
 
@@ -262,24 +280,6 @@ on rightclick:
             play sound "block.note_block.chime" with volume 0.2 and pitch 0.75 to player
             delete metadata value "is%{_ammoType}%OnCooldown" of player
             delete metadata value "islaserOnCooldown" of player
-
-command /giverangerItems:
-    permission: op
-    trigger:
-        set {_name} to mini message from {@slingshot_name_stone}
-        set {_slingshot} to createClassItem(lead, {_name}, {@slingshot_lore}, "&cKills", {@initial_stone_cooldown})
-        set string tag "itemType" of custom nbt of {_slingshot} to {@slingshot_type}
-        set string tag "currentAmmoType" of custom nbt of {_slingshot} to "stone"
-        set string list tag "availableAmmo" of custom nbt of {_slingshot} to "stone"
-        set double tag "cooldown" of custom nbt of {_slingshot} to {@initial_stone_cooldown}
-        set double tag "stoneCooldown" of custom nbt of {_slingshot} to {@initial_stone_cooldown}
-        set double tag "snowballCooldown" of custom nbt of {_slingshot} to {@initial_snowball_cooldown}
-        set double tag "firechargeCooldown" of custom nbt of {_slingshot} to {@initial_firecharge_cooldown}
-        set double tag "laserCooldown" of custom nbt of {_slingshot} to {@initial_laser_cooldown}
-        set double tag "level" of custom nbt of {_slingshot} to 0
-        set double tag "maxLevel" of custom nbt of {_slingshot} to 5
-        set double tag "lastMilestone" of custom nbt of {_slingshot} to 25
-        give {_slingshot} to player
 
 command /clearrangermetadata:
     permission: class.ranger

@@ -20,6 +20,35 @@ on load:
     clear {blackMageClassItemNames::*}
     set {blackMageClassItemNames::*} to {@wither_wand_type}, and {@drain_wand_type}
 
+function initializeBlackmageClass(player: player):
+    execute console command "lp user %{_player}% clear"
+    execute console command "lp user %{_player}% parent add blackmage"
+    set {_name} to mini message from {@wither_wand_name}
+    set {_wither_wand} to createClassItem(black candle, {_name}, {@wither_wand_lore}, "&cKills", {@initial_wither_wand_cooldown})
+    set string tag "itemType" of custom nbt of {_wither_wand} to {@wither_wand_type}
+    set double tag "numberOfHeads" of custom nbt of {_wither_wand} to {@initial_wither_wand_heads}
+    set double tag "skullSpeed" of custom nbt of {_wither_wand} to {@initial_wither_wand_speed}
+    set double tag "cooldown" of custom nbt of {_wither_wand} to {@initial_wither_wand_cooldown}
+    set double tag "level" of custom nbt of {_wither_wand} to 0
+    set double tag "maxLevel" of custom nbt of {_wither_wand} to 5
+    set boolean tag "isOnCooldown" of custom nbt of {_wither_wand} to false
+    set double tag "kills" of custom nbt of {_wither_wand} to 0
+    set double tag "lastMilestone" of custom nbt of {_wither_wand} to 25
+    give {_wither_wand} to {_player}
+
+    set {_name} to mini message from {@drain_wand_name}
+    set {_drain_wand} to createClassItem(open eyeblossom, {_name}, {@drain_wand_lore}, {@drain_wand_counter}, {@initial_drain_wand_cooldown})
+    set string tag "itemType" of custom nbt of {_drain_wand} to {@drain_wand_type}
+    set double tag "damage" of custom nbt of {_drain_wand} to 1
+    set double tag "range" of custom nbt of {_drain_wand} to {@initial_drain_wand_range}
+    set double tag "cooldown" of custom nbt of {_drain_wand} to {@initial_drain_wand_cooldown}
+    set boolean tag "isOnCooldown" of custom nbt of {_drain_wand} to false
+    set double tag "level" of custom nbt of {_drain_wand} to 0
+    set double tag "maxLevel" of custom nbt of {_drain_wand} to 5
+    set double tag "totalDrained" of custom nbt of {_drain_wand} to 0
+    set double tag "lastMilestone" of custom nbt of {_drain_wand} to 50
+    give {_drain_wand} to {_player}
+
 function updateDrainedLife(i: item, drained: number) :: item:
     set {_drainedLife} to getNumberTag({_i}, "totalDrained")
     # set {_totalDrained} to ({_drained} + {_drainedLife})
@@ -202,36 +231,8 @@ on explode:
         if shooter is a player:
             cancel event 
             create a safe explosion of force 0 at event-location
-            draw 30 smoke particles with extra value 0.05 at event-location
-
-command /givewands:
-    permission: op
-    trigger:
-        set {_name} to mini message from {@wither_wand_name}
-        set {_wither_wand} to createClassItem(black candle, {_name}, {@wither_wand_lore}, "&cKills", {@initial_wither_wand_cooldown})
-        set string tag "itemType" of custom nbt of {_wither_wand} to {@wither_wand_type}
-        set double tag "numberOfHeads" of custom nbt of {_wither_wand} to {@initial_wither_wand_heads}
-        set double tag "skullSpeed" of custom nbt of {_wither_wand} to {@initial_wither_wand_speed}
-        set double tag "cooldown" of custom nbt of {_wither_wand} to {@initial_wither_wand_cooldown}
-        set double tag "level" of custom nbt of {_wither_wand} to 0
-        set double tag "maxLevel" of custom nbt of {_wither_wand} to 5
-        set boolean tag "isOnCooldown" of custom nbt of {_wither_wand} to false
-        set double tag "kills" of custom nbt of {_wither_wand} to 0
-        set double tag "lastMilestone" of custom nbt of {_wither_wand} to 25
-        give {_wither_wand} to player
-
-        set {_name} to mini message from {@drain_wand_name}
-        set {_drain_wand} to createClassItem(open eyeblossom, {_name}, {@drain_wand_lore}, {@drain_wand_counter}, {@initial_drain_wand_cooldown})
-        set string tag "itemType" of custom nbt of {_drain_wand} to {@drain_wand_type}
-        set double tag "damage" of custom nbt of {_drain_wand} to 1
-        set double tag "range" of custom nbt of {_drain_wand} to {@initial_drain_wand_range}
-        set double tag "cooldown" of custom nbt of {_drain_wand} to {@initial_drain_wand_cooldown}
-        set boolean tag "isOnCooldown" of custom nbt of {_drain_wand} to false
-        set double tag "level" of custom nbt of {_drain_wand} to 0
-        set double tag "maxLevel" of custom nbt of {_drain_wand} to 5
-        set double tag "totalDrained" of custom nbt of {_drain_wand} to 0
-        set double tag "lastMilestone" of custom nbt of {_drain_wand} to 50
-        give {_drain_wand} to player
+            draw 15 smoke particles with extra value 0.1 at event-location
+            draw 15 flame particles with extra value 0.1 at event-location
 
 command /resetdata:
     trigger:

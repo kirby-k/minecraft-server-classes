@@ -1,17 +1,24 @@
-# Fix dungeon size
 on load:
-    clear {dungeon::spawns::enemies::*}
+    # Initialize dungeon areas and bounds
+    delete bound with id "room1"
+    delete bound with id "advanced_swimming"
+    # clear {dungeon::spawns::enemies::*}
 
-    create a bound with id "room1" within location(-1883, 257, 2363) and location(-1871, 500, 2348)
+    set {dungeon::difficulty} to "normal"
+
+    create a bound with id "room1" within location(-1882, 257, 2363) and location(-1872, 266, 2349)
     set {dungeon::areas::room1} to bound of id "room1"
     set {dungeon::areas::room1::has_been_entered} to false
-    set {dungeon::areas::room1::enemy_spawn::1} to location(-1881, 263, 2349, world) # Back right corner
-    set {dungeon::areas::room1::enemy_spawn::2} to location(-1881, 263, 2362, world) # Back left corner
+    set {dungeon::areas::room1::enemy_spawn::1} to location(-1881, 263, 2349)
+    set {dungeon::areas::room1::enemy_spawn::2} to location(-1881, 263, 2362)
+
+    # Difficult Swimming section
+    create a bound with id "advanced_swimming" within location(-1726, 261, 2433) and location(-1725, 263, 2408)
 
 function spawn_dungeon_enemies(spawnpoints: locations, enemies: texts):
     # Spawns enemies one at a time at each spawn point in a round-robin fashion
     # Enemies must be a string in the format "entityType:count", e.g., "zombie:5"
-    send "Debug: Spawning dungeon enemies..." to all players
+    broadcast "Debug: Spawning dungeon enemies..."
     loop {_enemies::*}:
         set {_parts::*} to loop-value split at ":"
         set {_enemyType} to {_parts::1} parsed as entity type
@@ -25,34 +32,41 @@ function spawn_dungeon_enemies(spawnpoints: locations, enemies: texts):
                 exit loop
 
 on bound enter with id "room1":
-    send "Debug: Player has entered Room 1!" to all players
+    broadcast "Debug: Player has entered Room 1!"
     set {_size} to size of bound blocks within bound with id "room1"
-    send "Debug: size of %{_size}%" to all players
+    broadcast "Debug: size of %{_size}%"
     if {dungeon::areas::room1::has_been_entered} is false:
         set {dungeon::areas::room1::has_been_entered} to true
         set {_player_count::*} to all of the players within bound bound with id "room1"
 
-        spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:3", "skeleton:3"))
+        if {dungeon::difficulty} is "normal":
+            spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:2", "skeleton:2"))
+            loop 2 times:
+                spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:2", "skeleton:1"))
+                wait 7 seconds
+        else if {dungeon::difficulty} is "hard":
+            # spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:4", "skeleton:2"))
+            spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("sheep:4", "pig:2"))
+            loop 2 times:
+                # spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:4", "skeleton:2"))
+                spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("sheep:4", "pig:2"))
+                wait 3 seconds
 
-        loop 10 times:
-            spawn_dungeon_enemies({dungeon::areas::room1::enemy_spawn::*}, ("zombie:2", "skeleton:1"))
-            wait 7 seconds
-
-        wait 1 second
         set {_monsters_alive::*} to all of the monsters within bound bound with id "room1"
         while size of {_monsters_alive::*} > 0:
             set {_monsters_alive::*} to all of the monsters within bound bound with id "room1"
-            wait 1 seconds
+            wait 10 ticks
 
-        send "Debug: Enemies have been defeated in Room 1!" to all players
-        wait 60 seconds
+        send "Debug: Enemies have been defeated in Room 1! Waiting to refresh the room..." to all players
+        set {dungeon::areas::room1::has_been_entered} to true
+        wait 3 seconds
         send "Debug: Enemies have refreshed in Room 1!" to all players
         set {dungeon::areas::room1::has_been_entered} to false
 
 on bound exit with id "room1":
-    send "Debug: Player has exited Room 1!" to all players
+    broadcast "Debug: Player has exited Room 1!"
 
-command /hint1:
-    permission: op
-    trigger:
-        send "&5The village elder has been eyeing you suspiciously..." to all players
+on bound enter with id "advanced_swimming":
+    broadcast "Debug: player entered advanced_swimming, reducing available air."
+    set {_nbt} to nbt of player
+    set short tag "Air" of {_nbt} to 150
